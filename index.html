@@ -594,7 +594,7 @@ function renderVoting(){
     b.onclick = async ()=>{
       if(!voter){ $('authorInput').focus(); return; }
       await registerParticipant(voter);
-      await setDoc(doc(votesCol(), post.id), {[`scores.${voter}`]: n}, {merge:true});
+      await setDoc(doc(votesCol(), post.id), {scores: {[voter]: n}}, {merge:true});
       await maybeAutoAdvanceVoting(post.id, session.currentIndex);
     };
     chips.appendChild(b);

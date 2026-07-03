@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Всё приложение живёт внутри rooms/{roomId}/...
+    // Аутентификации нет (по задаче — участники заходят без логина),
+    // поэтому доступ открыт в пределах структуры комнат.
+    // Это ПОДХОДИТ для внутреннего инструмента с созвонами по ссылке,
+    // но НЕ подходит, если в постах/фото будут чувствительные данные.
+    match /rooms/{roomId} {
+      allow read, write: if true;
+
+      match /session/{docId} {
+        allow read, write: if true;
+      }
+      match /photobank/{photoId} {
+        allow read, write: if true;
+      }
+      match /posts/{postId} {
+        allow read, write: if true;
+      }
+      match /votes/{postId} {
+        allow read, write: if true;
+      }
+      match /participants/{participantId} {
+        allow read, write: if true;
+
+        // Личные фото участника — отдельный саб-документ.
+        // Правила формально разрешают чтение и посторонним (нет auth,
+        // разграничивать по владельцу нечем), но клиентский код
+        // ЗАПРАШИВАЕТ этот документ только для своего собственного id,
+        // поэтому чужие личные фото на практике никогда не запрашиваются
+        // и не попадают на другие устройства.
+        match /private/{docId} {
+          allow read, write: if true;
+        }
+      }
+    }
+  }
+}

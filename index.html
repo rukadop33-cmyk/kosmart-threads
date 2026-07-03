@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Сборка поста — Threads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #EFEBF4; --bg-2:#E4DEF0;
+    --ink:#241E2E; --ink-soft:#6B6478;
+    --surface: rgba(255,255,255,0.72); --surface-solid:#FCFAFF;
+    --line: rgba(36,30,46,0.10);
+    --coral:#FF6F81; --coral-deep:#E85570;
+    --mint:#7FD9C4; --gold:#E8B33D; --lilac:#C9BFE0;
+    --shadow: 0 20px 40px -20px rgba(36,30,46,0.25);
+    --radius: 22px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',sans-serif; color:var(--ink);
+    background:
+      radial-gradient(circle at 15% -10%, #FBD9E3 0%, transparent 45%),
+      radial-gradient(circle at 110% 10%, #C9F0E4 0%, transparent 40%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    min-height:100vh; padding-bottom:24px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:20px 18px 24px;}
+  h1{font-family:'Manrope',sans-serif;font-weight:800;font-size:24px;letter-spacing:-0.02em;margin:0 0 4px;}
+  .sub{font-size:14px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;}
+  .tag{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.04em;text-transform:uppercase;color:var(--coral-deep);background:rgba(255,111,129,0.12);padding:4px 10px;border-radius:20px;margin-bottom:12px;}
+  .tag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--coral);}
+
+  .room-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface-solid);border:1px solid var(--line);border-radius:14px;padding:8px 12px;margin-bottom:14px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);}
+  .room-bar b{color:var(--ink);}
+  .room-bar button{border:none;background:none;color:var(--coral-deep);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;font-weight:600;}
+
+  .topbar{display:flex;gap:8px;align-items:center;margin-bottom:16px;}
+  .topbar .field{flex:1;margin:0;}
+  .gear{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface-solid);cursor:pointer;font-size:16px;flex-shrink:0;position:relative;}
+  .gear .dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--mint);}
+  .field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:6px;}
+  .field input[type=text]{width:100%;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-solid);font-family:'Inter',sans-serif;font-size:14px;color:var(--ink);outline:none;}
+  .field input[type=text]:focus{border-color:var(--coral);}
+
+  details.howto{background:var(--surface);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:12px 16px;margin-bottom:18px;font-size:13px;}
+  details.howto summary{cursor:pointer;font-weight:600;}
+  details.howto p{color:var(--ink-soft);line-height:1.6;margin:10px 0 0;}
+
+  .curator{background:#221B2E;color:#F1ECFA;border-radius:18px;padding:14px 16px;margin-bottom:18px;display:none;}
+  .curator.open{display:block;}
+  .curator h3{font-family:'Manrope',sans-serif;font-size:13px;margin:0 0 10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.04em;}
+  .curator .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  .curator button{font-family:'Manrope',sans-serif;font-weight:700;font-size:13px;border:none;border-radius:10px;padding:9px 14px;cursor:pointer;background:var(--coral);color:white;}
+  .curator button.secondary{background:rgba(255,255,255,0.12);color:#F1ECFA;}
+  .curator button:disabled{opacity:0.4;cursor:not-allowed;}
+  .curator .status{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8AFD0;margin-bottom:10px;}
+  .plist{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+  .pchip{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 9px;border-radius:20px;background:rgba(255,255,255,0.08);display:inline-flex;align-items:center;gap:5px;}
+  .pchip.done{background:rgba(127,217,196,0.22);color:var(--mint);}
+  .pchip.pending{color:#B8AFD0;}
+  .pchip .od{width:6px;height:6px;border-radius:50%;background:#4A4358;}
+  .pchip .od.online{background:var(--mint);}
+
+  .card{background:var(--surface);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.6);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 18px 16px;position:relative;overflow:hidden;}
+  .card::before{content:"";position:absolute;top:-40%;right:-20%;width:60%;height:80%;background:radial-gradient(circle, rgba(255,255,255,0.9) 0%, transparent 70%);pointer-events:none;}
+  .post-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;position:relative;}
+  .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg, var(--coral), var(--lilac));display:flex;align-items:center;justify-content:center;color:white;font-family:'Manrope',sans-serif;font-weight:700;font-size:14px;flex-shrink:0;}
+  .who .name{font-weight:600;font-size:14px;line-height:1.2;}
+  .who .time{font-size:12px;color:var(--ink-soft);}
+  .caption{width:100%;min-height:54px;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:15px;line-height:1.5;color:var(--ink);resize:none;outline:none;padding:0;margin-bottom:12px;}
+  .caption::placeholder{color:#A79FB5;}
+  .counter{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-align:right;margin:-6px 0 12px;}
+  .counter.over{color:var(--coral-deep);}
+  .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .slot{aspect-ratio:1/1;border-radius:14px;position:relative;overflow:hidden;background:rgba(255,255,255,0.5);border:1.5px dashed rgba(36,30,46,0.18);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s, border-color .15s, background .15s;}
+  .slot.filled{border-style:solid;border-color:transparent;}
+  .slot.armed{border-color:var(--coral);background:rgba(255,111,129,0.10);}
+  .slot img{width:100%;height:100%;object-fit:cover;display:block;}
+  .slot .idx{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);}
+  .slot .rm{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(36,30,46,0.55);color:white;border:none;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .slot.busy{opacity:0.5;}
+  .slot.ripple::after{content:"";position:absolute;inset:0;border-radius:14px;box-shadow:0 0 0 0 rgba(255,111,129,0.55);animation:ripple .55s ease-out;}
+  @keyframes ripple{from{box-shadow:0 0 0 0 rgba(255,111,129,0.55);} to{box-shadow:0 0 0 14px rgba(255,111,129,0);}}
+  .btn-row{display:flex;gap:8px;margin-top:16px;}
+  .save-btn{flex:1;padding:13px;border-radius:14px;background:var(--surface-solid);border:1.5px solid var(--line);color:var(--ink);font-family:'Manrope',sans-serif;font-weight:700;font-size:14px;cursor:pointer;}
+  .save-btn:disabled{opacity:0.45;cursor:not-allowed;}
+  .done-btn{flex:1;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg, var(--coral), var(--coral-deep));color:white;font-family:'Manrope',sans-serif;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 10px 24px -8px rgba(232,85,112,0.55);}
+  .done-btn:disabled{opacity:0.45;cursor:not-allowed;box-shadow:none;}
+  .saved-msg{text-align:center;font-size:13px;color:#1E9C7D;font-weight:600;margin-top:10px;display:none;}
+
+  .lock-note{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:13px;color:var(--ink-soft);text-align:center;margin-top:16px;}
+
+  .waiting{background:var(--surface);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.6);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 20px;text-align:center;}
+  .waiting .big{font-size:32px;margin-bottom:6px;}
+  .waiting h2{font-family:'Manrope',sans-serif;font-size:18px;margin:0 0 6px;}
+  .waiting p{color:var(--ink-soft);font-size:14px;margin:0 0 14px;}
+  .waiting .stat{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--coral-deep);margin-bottom:14px;}
+  .waiting button{background:none;border:1px solid var(--line);border-radius:12px;padding:9px 16px;font-size:13px;color:var(--ink-soft);cursor:pointer;}
+
+  .tray{position:sticky;bottom:0;background:var(--surface-solid);border-top:1px solid var(--line);box-shadow:0 -12px 30px -14px rgba(36,30,46,0.25);padding:10px 14px 4px;backdrop-filter:blur(16px);margin:16px -18px 0;}
+  .tray-label{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:8px;display:flex;justify-content:space-between;}
+  .tray-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;}
+  .tray-thumb{width:60px;height:60px;flex-shrink:0;border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;position:relative;}
+  .tray-thumb.selected{border-color:var(--coral);transform:scale(1.05);}
+  .tray-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .tray-thumb.personal{border-color:var(--mint);}
+  .tray-thumb.uploading{opacity:0.4;}
+  .tray-divider{flex-shrink:0;display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);padding:0 2px;white-space:nowrap;}
+  .add-tile{width:60px;height:60px;flex-shrink:0;border-radius:12px;border:1.5px dashed rgba(36,30,46,0.25);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--ink-soft);cursor:pointer;background:rgba(255,255,255,0.5);}
+  input[type=file]{display:none;}
+
+  .vote-progress{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);text-align:center;margin-bottom:10px;}
+  .vote-card{background:var(--surface);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.6);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 18px;text-align:left;}
+  .vote-cap{font-size:16px;line-height:1.5;margin-bottom:14px;}
+  .vote-imgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:6px;}
+  .vote-imgs img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;}
+  .scale-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.05em;margin:18px 0 8px;text-align:center;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .chip{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-solid);font-family:'Manrope',sans-serif;font-weight:700;font-size:15px;cursor:pointer;color:var(--ink);}
+  .chip.active{background:var(--coral);border-color:var(--coral);color:white;}
+  .chip:disabled{opacity:0.4;cursor:not-allowed;}
+  .voted-msg{text-align:center;margin-top:14px;font-size:14px;color:var(--coral-deep);font-weight:600;}
+  .voted-list{text-align:center;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+
+  .winner-banner{background:linear-gradient(160deg, #2A2036, #241E2E);color:#F1ECFA;border-radius:var(--radius);padding:26px 20px;text-align:center;margin-bottom:20px;box-shadow:var(--shadow);}
+  .winner-banner .crown-big{font-size:38px;margin-bottom:4px;}
+  .winner-banner .wtag{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:10px;}
+  .winner-banner .wimgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;margin:12px 0;max-width:360px;margin-left:auto;margin-right:auto;}
+  .winner-banner .wimgs img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;}
+  .winner-banner .wname{font-family:'Manrope',sans-serif;font-weight:800;font-size:20px;margin-bottom:6px;}
+  .winner-banner .wcap{font-size:14px;color:#D7CFE8;line-height:1.5;margin-bottom:12px;}
+  .winner-banner .wscore{font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--gold);}
+  .rank{display:flex;gap:12px;align-items:center;background:var(--surface-solid);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;}
+  .rank.winner{background:linear-gradient(135deg, rgba(232,179,61,0.18), rgba(255,111,129,0.10));border-color:var(--gold);}
+  .rank .place{font-family:'Manrope',sans-serif;font-weight:800;font-size:18px;width:28px;text-align:center;color:var(--ink-soft);}
+  .rank.winner .place{color:var(--gold);}
+  .rank .thumb{width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#eee;}
+  .rank .info{flex:1;min-width:0;}
+  .rank .info .n{font-weight:700;font-size:14px;}
+  .rank .info .c{font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rank .score{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:16px;color:var(--coral-deep);}
+  .crown{font-size:20px;}
+
+  .cfg-warning{background:#3A1E24;color:#FFD7DC;border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.6;margin-bottom:16px;font-family:'IBM Plex Mono',monospace;}
+  .cfg-warning b{color:#FF9FAC;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="cfgWarning"></div>
+
+  <div class="tag" id="phaseTag">Сборка постов</div>
+  <h1>Пост для Threads</h1>
+  <p class="sub" id="subText">Соберите пост из общего банка фото — остальные не увидят его, пока не начнётся голосование.</p>
+
+  <div class="room-bar">
+    <span>Комната: <b id="roomLabel">—</b></span>
+    <button id="copyLinkBtn">скопировать ссылку</button>
+  </div>
+
+  <div class="topbar">
+    <div class="field">
+      <label>Ваше имя</label>
+      <input type="text" id="authorInput" placeholder="Например, Аня">
+    </div>
+    <button class="gear" id="gearBtn" title="Режим куратора">⚙</button>
+  </div>
+
+  <div class="curator" id="curatorPanel">
+    <h3>Режим куратора</h3>
+    <div class="status" id="curatorStatus">—</div>
+    <div class="plist" id="curatorPList"></div>
+    <div class="row" id="curatorControls"></div>
+    <div class="row">
+      <button id="officialUploadBtn">+ Фото в общий банк (видно всем)</button>
+    </div>
+    <div class="row"><button class="secondary" id="resetBtn">Начать всё заново</button></div>
+  </div>
+
+  <details class="howto" id="howto">
+    <summary>Как это работает</summary>
+    <p>1. Каждый собирает пост из общих фото — другие не видят его.<br>
+    2. Когда пост готов — жмёте «Готово, я закончил(а)».<br>
+    3. Как только готовы все — голосование начнётся автоматически.<br>
+    4. Каждый ставит оценку от 1 до 10 показанному посту — следующий пост появится сам, когда проголосуют все.<br>
+    5. В конце — рейтинг и победитель, у всех сразу.</p>
+  </details>
+
+  <div id="composeView">
+    <div class="card">
+      <div class="post-head">
+        <div class="avatar" id="avatarInit">?</div>
+        <div class="who"><div class="name" id="nameDisplay">Ваш ник</div><div class="time">сейчас</div></div>
+      </div>
+      <textarea class="caption" id="captionInput" placeholder="Текст поста…" maxlength="500" rows="3"></textarea>
+      <div class="counter" id="counter">0 / 500</div>
+      <div class="slots" id="slots"></div>
+      <div class="btn-row">
+        <button class="save-btn" id="saveBtn" disabled>Сохранить пост</button>
+        <button class="done-btn" id="doneBtn" disabled>Готово, я закончил(а)</button>
+      </div>
+      <div class="saved-msg" id="savedMsg">Пост сохранён ✓</div>
+    </div>
+    <div class="tray" id="trayBlock">
+      <div class="tray-label"><span>Банк фото</span><span>нажмите фото, затем — на слот</span></div>
+      <div class="tray-strip" id="trayStrip"></div>
+    </div>
+  </div>
+
+  <div id="waitingView" style="display:none;">
+    <div class="waiting">
+      <div class="big">✅</div>
+      <h2>Пост сохранён</h2>
+      <p>Ждём остальных участников</p>
+      <div class="stat" id="waitStat">готово 0 из 0</div>
+      <button id="editAgainBtn">Изменить пост</button>
+    </div>
+  </div>
+
+  <div id="votingView" style="display:none;">
+    <div class="vote-progress" id="voteProgress"></div>
+    <div class="vote-card">
+      <div class="vote-cap" id="voteCap"></div>
+      <div class="vote-imgs" id="voteImgs"></div>
+    </div>
+    <div class="scale-label">Оцените пост от 1 до 10</div>
+    <div class="chips" id="chips"></div>
+    <div class="voted-msg" id="votedMsg" style="display:none;"></div>
+    <div class="voted-list" id="votedList"></div>
+  </div>
+
+  <div id="resultsView" style="display:none;">
+    <div id="winnerBanner"></div>
+    <div id="rankList"></div>
+  </div>
+
+  <div id="lockedNote" class="lock-note" style="display:none;"></div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" multiple>
+<input type="file" id="officialFileInput" accept="image/*" multiple>
+
+<script type="module">
+/* ===================== Firebase init ===================== */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, doc, setDoc, updateDoc, getDoc, getDocs, onSnapshot,
+  collection, addDoc, serverTimestamp, runTransaction
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getStorage, ref, uploadString, getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+// ⚠️ ЗАМЕНИТЕ на конфиг вашего Firebase-проекта (Project settings → General → Your apps → Web app)
+const firebaseConfig = {
+  apiKey: "AIzaSyCj7v53s6ZWggkbnICGfgb6ENILPdfacGg",
+  authDomain: "kosmart-threads.firebaseapp.com",
+  projectId: "kosmart-threads",
+  storageBucket: "kosmart-threads.firebasestorage.app",
+  messagingSenderId: "1076176802407",
+  appId: "1:1076176802407:web:73b355a4051afe7494bac2"
+};
+
+let app, db, storage, FIREBASE_READY = false;
+try{
+  if(firebaseConfig.apiKey !== "REPLACE_ME"){
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    storage = getStorage(app);
+    FIREBASE_READY = true;
+  }
+}catch(e){ console.error('Firebase init failed', e); }
+
+if(!FIREBASE_READY){
+  document.getElementById('cfgWarning').innerHTML =
+    '<div class="cfg-warning"><b>Firebase не настроен.</b> Откройте index.html и вставьте свой firebaseConfig (см. README.md). Пока конфиг не заполнен, приложение работать не будет.</div>';
+}
+
+/* ===================== Room ===================== */
+const params = new URLSearchParams(location.search);
+const ROOM = (params.get('room') || 'default').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40) || 'default';
+document.getElementById('roomLabel').textContent = ROOM;
+document.getElementById('copyLinkBtn').onclick = ()=>{
+  const url = new URL(location.href);
+  url.searchParams.set('room', ROOM);
+  navigator.clipboard?.writeText(url.toString());
+  const btn = document.getElementById('copyLinkBtn');
+  const old = btn.textContent; btn.textContent = 'скопировано ✓';
+  setTimeout(()=>btn.textContent = old, 1500);
+};
+
+const roomRef = () => doc(db, 'rooms', ROOM);
+const sessionRef = () => doc(db, 'rooms', ROOM, 'session', 'state');
+const photobankCol = () => collection(db, 'rooms', ROOM, 'photobank');
+const postsCol = () => collection(db, 'rooms', ROOM, 'posts');
+const votesCol = () => collection(db, 'rooms', ROOM, 'votes');
+const participantsCol = () => collection(db, 'rooms', ROOM, 'participants');
+const participantRef = (id) => doc(db, 'rooms', ROOM, 'participants', id);
+const privatePhotosRef = (id) => doc(db, 'rooms', ROOM, 'participants', id, 'private', 'photos');
+
+const SLOT_COUNT = 4;
+const $ = (id) => document.getElementById(id);
+
+/* ===================== Local state (mirrors Firestore via onSnapshot) ===================== */
+let photobank = [];      // [{id, url}]
+let myPhotoItems = [];   // [{id, url}] — only for current user, from private/photos doc
+let posts = [];          // [{id, author, caption, images:[url], createdAt}]
+let votesByPost = {};    // {postId: {name:score}}
+let participants = {};   // {id: {name, done, lastSeen}}
+let session = {phase:'compose', currentIndex:0};
+
+let selectedPhotoId = null;
+let currentSlots = new Array(SLOT_COUNT).fill(null);
+let curatorOpen = false;
+let myId = null; // slug of current name, set on registration
+
+function slugify(name){
+  return name.trim().toLowerCase()
+    .replace(/\s+/g,'_')
+    .replace(/[^a-z0-9а-яё_]/gi,'')
+    .slice(0,60) || ('anon_' + Math.random().toString(36).slice(2,8));
+}
+function initials(name){ if(!name) return '?'; const p=name.trim().split(/\s+/); return (p[0][0]+(p[1]?p[1][0]:'')).toUpperCase(); }
+function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str; return d.innerHTML; }
+const voterName = () => $('authorInput').value.trim();
+
+function resizeImage(file, maxW=800, quality=0.72){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const scale = Math.min(1, maxW/img.width);
+        const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+        const canvas = document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject; img.src = e.target.result;
+    };
+    reader.onerror = reject; reader.readAsDataURL(file);
+  });
+}
+async function uploadToStorage(path, dataUrl){
+  const r = ref(storage, path);
+  await uploadString(r, dataUrl, 'data_url');
+  return await getDownloadURL(r);
+}
+
+/* ===================== Derived helpers ===================== */
+function sortedPosts(){
+  return posts.slice().sort((a,b)=> (a.createdAt?.toMillis?.()||0) - (b.createdAt?.toMillis?.()||0));
+}
+function hasSavedPost(name){ return posts.some(p=>p.author===name); }
+function participantStats(){
+  const ids = Object.keys(participants);
+  const done = ids.filter(id=>participants[id].done).length;
+  const online = ids.filter(id=> Date.now() - (participants[id].lastSeen||0) < 20000).length;
+  return {ids, total: ids.length, done, online};
+}
+
+/* ===================== Registration & presence ===================== */
+let heartbeatTimer = null;
+async function registerParticipant(name){
+  if(!name || !FIREBASE_READY) return;
+  myId = slugify(name);
+  await setDoc(participantRef(myId), {name, done: participants[myId]?.done || false, lastSeen: Date.now()}, {merge:true});
+  attachPrivatePhotosListener();
+  if(!heartbeatTimer){
+    heartbeatTimer = setInterval(()=>{
+      if(myId) updateDoc(participantRef(myId), {lastSeen: Date.now()}).catch(()=>{});
+    }, 8000);
+  }
+}
+async function setDone(name, val){
+  if(!name || !FIREBASE_READY) return;
+  const id = slugify(name);
+  await updateDoc(participantRef(id), {done: val});
+  await maybeAutoStartVoting();
+}
+async function maybeAutoStartVoting(){
+  const {total, done} = participantStats();
+  if(total>0 && done===total && posts.length>0){
+    await runTransaction(db, async (tx)=>{
+      const snap = await tx.get(sessionRef());
+      const s = snap.exists() ? snap.data() : {phase:'compose', currentIndex:0};
+      if(s.phase!=='compose') return;
+      tx.set(sessionRef(), {phase:'voting', currentIndex:0}, {merge:true});
+    });
+  }
+}
+
+/* ===================== Firestore listeners (realtime, no polling) ===================== */
+function attachListeners(){
+  onSnapshot(sessionRef(), (snap)=>{
+    session = snap.exists() ? snap.data() : {phase:'compose', currentIndex:0};
+    render();
+  });
+
+  onSnapshot(photobankCol(), (snap)=>{
+    photobank = snap.docs.map(d=>({id:d.id, url:d.data().url}));
+    renderTray();
+  });
+
+  onSnapshot(postsCol(), (snap)=>{
+    posts = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    updateSaveState();
+    if(session.phase==='compose') render();
+    if(session.phase==='voting') renderVoting();
+    if(session.phase==='results') renderResults();
+  });
+
+  onSnapshot(votesCol(), (snap)=>{
+    votesByPost = {};
+    snap.docs.forEach(d=> votesByPost[d.id] = d.data().scores || {});
+    if(session.phase==='voting') renderVoting();
+    if(session.phase==='results') renderResults();
+  });
+
+  onSnapshot(participantsCol(), (snap)=>{
+    participants = {};
+    snap.docs.forEach(d=> participants[d.id] = d.data());
+    if(curatorOpen) renderCurator();
+    if(session.phase==='compose') render();
+  });
+}
+function attachPrivatePhotosListener(){
+  if(!myId) return;
+  onSnapshot(privatePhotosRef(myId), (snap)=>{
+    myPhotoItems = snap.exists() ? (snap.data().items || []) : [];
+    renderTray();
+  });
+}
+// re-render presence dots periodically (UI-only, not a data sync mechanism)
+setInterval(()=>{ if(curatorOpen) renderCurator(); }, 5000);
+
+/* ===================== Photo tray ===================== */
+function renderTray(){
+  const strip = $('trayStrip');
+  strip.innerHTML = '';
+  photobank.forEach(p=>{
+    const el = document.createElement('div');
+    el.className = 'tray-thumb' + (selectedPhotoId===p.id ? ' selected' : '');
+    el.innerHTML = `<img src="${p.url}" draggable="false">`;
+    el.onclick = ()=>{ selectedPhotoId = (selectedPhotoId===p.id) ? null : p.id; renderTray(); renderSlots(); };
+    strip.appendChild(el);
+  });
+  if(myPhotoItems.length>0){
+    const divider = document.createElement('div');
+    divider.className = 'tray-divider'; divider.textContent = 'мои';
+    strip.appendChild(divider);
+    myPhotoItems.forEach(p=>{
+      const el = document.createElement('div');
+      el.className = 'tray-thumb personal' + (selectedPhotoId===p.id ? ' selected' : '');
+      el.innerHTML = `<img src="${p.url}" draggable="false">`;
+      el.onclick = ()=>{ selectedPhotoId = (selectedPhotoId===p.id) ? null : p.id; renderTray(); renderSlots(); };
+      strip.appendChild(el);
+    });
+  }
+  const addTile = document.createElement('div');
+  addTile.className = 'add-tile'; addTile.textContent = '+';
+  addTile.title = 'Добавить своё фото (видно только вам)';
+  addTile.onclick = ()=> $('fileInput').click();
+  strip.appendChild(addTile);
+}
+
+$('fileInput').addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files || []);
+  const name = voterName();
+  if(!name){ alert('Сначала впишите имя'); e.target.value=''; return; }
+  await registerParticipant(name);
+  for(const f of files){
+    try{
+      const dataUrl = await resizeImage(f);
+      const photoId = 'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+      const url = await uploadToStorage(`rooms/${ROOM}/personal/${myId}/${photoId}.jpg`, dataUrl);
+      const cur = myPhotoItems.slice();
+      cur.push({id:photoId, url});
+      await setDoc(privatePhotosRef(myId), {items: cur}, {merge:true});
+    }catch(err){ console.error(err); }
+  }
+  e.target.value = '';
+});
+
+$('officialFileInput').addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files || []);
+  for(const f of files){
+    try{
+      const dataUrl = await resizeImage(f);
+      const photoId = 'ph_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+      const url = await uploadToStorage(`rooms/${ROOM}/photobank/${photoId}.jpg`, dataUrl);
+      await setDoc(doc(photobankCol(), photoId), {url, createdAt: Date.now()});
+    }catch(err){ console.error(err); }
+  }
+  e.target.value = '';
+});
+$('officialUploadBtn').addEventListener('click', ()=> $('officialFileInput').click());
+
+/* ===================== Compose ===================== */
+function renderSlots(){
+  const box = $('slots'); box.innerHTML = '';
+  for(let i=0;i<SLOT_COUNT;i++){
+    const val = currentSlots[i];
+    const el = document.createElement('div');
+    el.className = 'slot' + (val?' filled':'') + (!val && selectedPhotoId ? ' armed':'');
+    if(val){
+      el.innerHTML = `<img src="${val}"><button class="rm">×</button>`;
+      el.querySelector('.rm').onclick = (ev)=>{ ev.stopPropagation(); currentSlots[i]=null; renderSlots(); updateSaveState(); };
+    } else {
+      el.innerHTML = `<span class="idx">${i+1}</span>`;
+    }
+    el.onclick = ()=>{
+      if(selectedPhotoId){
+        const photo = photobank.find(p=>p.id===selectedPhotoId) || myPhotoItems.find(p=>p.id===selectedPhotoId);
+        if(photo){
+          currentSlots[i] = photo.url; selectedPhotoId = null;
+          renderTray(); renderSlots();
+          el.classList.add('ripple'); setTimeout(()=>el.classList.remove('ripple'),600);
+          updateSaveState();
+        }
+      }
+    };
+    box.appendChild(el);
+  }
+}
+function updateSaveState(){
+  const name = voterName();
+  const hasName = name.length>0;
+  const hasCaption = $('captionInput').value.trim().length>0;
+  const hasImage = currentSlots.some(s=>s);
+  $('saveBtn').disabled = !(hasName && (hasCaption || hasImage));
+  $('doneBtn').disabled = !(hasName && hasSavedPost(name));
+}
+$('authorInput').addEventListener('input', ()=>{
+  const v = voterName();
+  $('nameDisplay').textContent = v || 'Ваш ник';
+  $('avatarInit').textContent = initials(v);
+  updateSaveState();
+  if(session.phase==='voting') renderVoting();
+});
+$('authorInput').addEventListener('blur', async ()=>{
+  const v = voterName();
+  if(v) await registerParticipant(v);
+});
+$('captionInput').addEventListener('input', ()=>{
+  const len = $('captionInput').value.length;
+  $('counter').textContent = `${len} / 500`;
+  $('counter').classList.toggle('over', len>500);
+  updateSaveState();
+});
+$('saveBtn').addEventListener('click', async ()=>{
+  const author = voterName();
+  const caption = $('captionInput').value.trim();
+  const images = currentSlots.filter(s=>s);
+  if(!author || !FIREBASE_READY) return;
+  await registerParticipant(author);
+  await addDoc(postsCol(), {author, caption, images, createdAt: serverTimestamp()});
+  currentSlots = new Array(SLOT_COUNT).fill(null);
+  $('captionInput').value=''; $('counter').textContent='0 / 500';
+  renderSlots(); updateSaveState();
+  $('savedMsg').style.display='block';
+  setTimeout(()=>$('savedMsg').style.display='none', 2500);
+});
+$('doneBtn').addEventListener('click', async ()=>{
+  const author = voterName();
+  if(!author || !hasSavedPost(author)) return;
+  await setDone(author, true);
+  render();
+});
+$('editAgainBtn').addEventListener('click', async ()=>{
+  await setDone(voterName(), false);
+  render();
+});
+function renderWaiting(){
+  const {total, done} = participantStats();
+  $('waitStat').textContent = `готово ${done} из ${total}`;
+}
+
+/* ===================== Voting ===================== */
+function renderVoting(){
+  const list = sortedPosts();
+  const post = list[session.currentIndex];
+  if(!post){ $('voteProgress').textContent = 'Постов нет'; return; }
+  const {total} = participantStats();
+  const scores = votesByPost[post.id] || {};
+  const voteCount = Object.keys(scores).length;
+  $('voteProgress').textContent = `Пост ${session.currentIndex+1} из ${list.length} · проголосовало ${voteCount} из ${total}`;
+  $('voteCap').textContent = post.caption || '(без текста)';
+  $('voteImgs').innerHTML = post.images.map(i=>`<img src="${i}">`).join('');
+  $('votedList').textContent = voteCount ? `Проголосовали: ${Object.keys(scores).join(', ')}` : '';
+
+  const voter = voterName();
+  const myVote = voter ? scores[voter] : null;
+  const chips = $('chips');
+  chips.innerHTML = '';
+  for(let n=1;n<=10;n++){
+    const b = document.createElement('button');
+    b.className = 'chip' + (myVote===n ? ' active':'');
+    b.textContent = n;
+    b.disabled = !voter || !!myVote;
+    b.onclick = async ()=>{
+      if(!voter){ $('authorInput').focus(); return; }
+      await registerParticipant(voter);
+      await setDoc(doc(votesCol(), post.id), {[`scores.${voter}`]: n}, {merge:true});
+      await maybeAutoAdvanceVoting(post.id, session.currentIndex);
+    };
+    chips.appendChild(b);
+  }
+  $('votedMsg').style.display = myVote ? 'block' : 'none';
+  $('votedMsg').textContent = myVote ? `Ваша оценка: ${myVote}. Следующий пост появится автоматически.` : '';
+}
+
+async function maybeAutoAdvanceVoting(postId, indexVoted){
+  const votesSnap = await getDoc(doc(votesCol(), postId));
+  const scores = votesSnap.exists() ? (votesSnap.data().scores || {}) : {};
+  const partSnap = await getDocs(participantsCol());
+  const total = partSnap.size;
+  const voteCount = Object.keys(scores).length;
+  if(total>0 && voteCount>=total){
+    const list = sortedPosts();
+    await runTransaction(db, async (tx)=>{
+      const snap = await tx.get(sessionRef());
+      const s = snap.exists() ? snap.data() : {phase:'voting', currentIndex:0};
+      if(s.phase!=='voting' || s.currentIndex!==indexVoted) return;
+      const next = (indexVoted >= list.length-1)
+        ? {phase:'results', currentIndex:indexVoted}
+        : {phase:'voting', currentIndex:indexVoted+1};
+      tx.set(sessionRef(), next, {merge:true});
+    });
+  }
+}
+
+/* ===================== Results ===================== */
+function renderResults(){
+  const list = sortedPosts();
+  const scored = list.map(p=>{
+    const scores = votesByPost[p.id] || {};
+    const vals = Object.values(scores);
+    const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+    return {post:p, avg, count:vals.length};
+  }).sort((a,b)=> b.avg - a.avg);
+
+  const banner = $('winnerBanner');
+  const winner = scored.find(s=>s.count>0);
+  banner.innerHTML = winner ? `
+    <div class="winner-banner">
+      <div class="crown-big">🏆</div>
+      <div class="wtag">Пост-победитель</div>
+      <div class="wname">${escapeHtml(winner.post.author)}</div>
+      ${winner.post.images.length ? `<div class="wimgs">${winner.post.images.map(i=>`<img src="${i}">`).join('')}</div>` : ''}
+      <div class="wcap">${escapeHtml(winner.post.caption || '(без текста)')}</div>
+      <div class="wscore">Средняя оценка: ${winner.avg.toFixed(1)} · ${winner.count} ${winner.count===1?'голос':'голосов'}</div>
+    </div>` : '';
+
+  const box = $('rankList'); box.innerHTML = '';
+  scored.forEach((s, idx)=>{
+    const el = document.createElement('div');
+    el.className = 'rank' + (idx===0 && s.count>0 ? ' winner':'');
+    el.innerHTML = `
+      <div class="place">${idx===0 && s.count>0 ? '<span class="crown">🏆</span>' : idx+1}</div>
+      ${s.post.images[0] ? `<img class="thumb" src="${s.post.images[0]}">` : '<div class="thumb"></div>'}
+      <div class="info">
+        <div class="n">${escapeHtml(s.post.author)}</div>
+        <div class="c">${escapeHtml(s.post.caption || '(без текста)')}</div>
+      </div>
+      <div class="score">${s.count ? s.avg.toFixed(1) : '—'}</div>
+    `;
+    box.appendChild(el);
+  });
+}
+
+/* ===================== Curator panel ===================== */
+function renderCurator(){
+  const status = $('curatorStatus');
+  const controls = $('curatorControls');
+  const plist = $('curatorPList');
+  const list = sortedPosts();
+  const {ids, total, done} = participantStats();
+  status.textContent = `Комната: ${ROOM} · Фаза: ${session.phase} · Постов: ${posts.length} · Готово: ${done} из ${total}`;
+  plist.innerHTML = ids.map(id=>{
+    const p = participants[id];
+    const online = Date.now() - (p.lastSeen||0) < 20000;
+    return `<span class="pchip ${p.done?'done':'pending'}"><span class="od ${online?'online':''}"></span>${p.done?'✅':'⏳'} ${escapeHtml(p.name||id)}</span>`;
+  }).join('');
+  controls.innerHTML = '';
+
+  if(session.phase==='compose'){
+    const b = document.createElement('button');
+    b.textContent = 'Начать голосование';
+    b.disabled = posts.length===0;
+    b.onclick = async ()=>{ await setDoc(sessionRef(), {phase:'voting', currentIndex:0}, {merge:true}); };
+    controls.appendChild(b);
+  }
+  if(session.phase==='voting'){
+    const back = document.createElement('button'); back.className='secondary'; back.textContent='← К сборке';
+    back.onclick = async ()=>{ await setDoc(sessionRef(), {phase:'compose'}, {merge:true}); };
+    const prev = document.createElement('button'); prev.className='secondary'; prev.textContent='← Пред.';
+    prev.disabled = session.currentIndex<=0;
+    prev.onclick = async ()=>{ await setDoc(sessionRef(), {currentIndex: session.currentIndex-1}, {merge:true}); };
+    const next = document.createElement('button'); next.textContent='След. →';
+    next.disabled = session.currentIndex>=list.length-1;
+    next.onclick = async ()=>{ await setDoc(sessionRef(), {currentIndex: session.currentIndex+1}, {merge:true}); };
+    const finish = document.createElement('button'); finish.textContent='Показать результаты';
+    finish.onclick = async ()=>{ await setDoc(sessionRef(), {phase:'results'}, {merge:true}); };
+    controls.appendChild(back); controls.appendChild(prev); controls.appendChild(next); controls.appendChild(finish);
+  }
+  if(session.phase==='results'){
+    const back = document.createElement('button'); back.className='secondary'; back.textContent='← Вернуться к голосованию';
+    back.onclick = async ()=>{ await setDoc(sessionRef(), {phase:'voting'}, {merge:true}); };
+    controls.appendChild(back);
+  }
+}
+$('gearBtn').addEventListener('click', ()=>{
+  curatorOpen = !curatorOpen;
+  $('curatorPanel').classList.toggle('open', curatorOpen);
+  if(curatorOpen) renderCurator();
+});
+$('resetBtn').addEventListener('click', async ()=>{
+  if(!confirm('Точно начать заново? Посты, оценки и статусы участников в этой комнате будут удалены (общий банк фото останется).')) return;
+  const [postsSnap, votesSnap, partSnap] = await Promise.all([getDocs(postsCol()), getDocs(votesCol()), getDocs(participantsCol())]);
+  await Promise.all([
+    ...postsSnap.docs.map(d=> setDoc(d.ref, {deleted:true})), // soft marker; see README for cleanup note
+  ]);
+  // hard delete via deleteDoc where available
+  const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  await Promise.all([
+    ...postsSnap.docs.map(d=> deleteDoc(d.ref)),
+    ...votesSnap.docs.map(d=> deleteDoc(d.ref)),
+    ...partSnap.docs.map(d=> deleteDoc(d.ref)),
+  ]);
+  await setDoc(sessionRef(), {phase:'compose', currentIndex:0});
+});
+
+/* ===================== Main render ===================== */
+function render(){
+  const compose = $('composeView'), waiting = $('waitingView'), voting = $('votingView'), results = $('resultsView'), locked = $('lockedNote'), howto = $('howto');
+  compose.style.display='none'; waiting.style.display='none'; voting.style.display='none'; results.style.display='none'; locked.style.display='none';
+
+  const myName = voterName();
+  const myPid = myName ? slugify(myName) : null;
+  const iAmDone = myPid && participants[myPid] && participants[myPid].done;
+
+  if(session.phase==='compose'){
+    $('phaseTag').textContent = 'Сборка постов';
+    $('subText').textContent = 'Соберите пост из общего банка фото — остальные не увидят его, пока не начнётся голосование.';
+    howto.style.display='block';
+    if(iAmDone){ waiting.style.display='block'; renderWaiting(); }
+    else { compose.style.display='block'; }
+  } else if(session.phase==='voting'){
+    $('phaseTag').textContent = 'Голосование';
+    $('subText').textContent = 'Оцените показанный пост от 1 до 10.';
+    howto.style.display='none';
+    const list = sortedPosts();
+    if(list.length===0){ locked.style.display='block'; locked.textContent='Постов пока нет.'; }
+    else { voting.style.display='block'; renderVoting(); }
+  } else if(session.phase==='results'){
+    $('phaseTag').textContent = 'Результаты';
+    $('subText').textContent = 'Голосование завершено — вот итоговый рейтинг.';
+    howto.style.display='none';
+    results.style.display='block'; renderResults();
+  }
+  if(curatorOpen) renderCurator();
+}
+
+/* ===================== Boot ===================== */
+renderSlots();
+if(FIREBASE_READY) attachListeners();
+</script>
+</body>
+</html>

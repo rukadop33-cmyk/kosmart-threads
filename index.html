@@ -250,26 +250,21 @@ import {
   getFirestore, doc, setDoc, updateDoc, getDoc, getDocs, onSnapshot,
   collection, addDoc, serverTimestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-  getStorage, ref, uploadString, getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 // ⚠️ ЗАМЕНИТЕ на конфиг вашего Firebase-проекта (Project settings → General → Your apps → Web app)
 const firebaseConfig = {
-  apiKey: "AIzaSyCj7v53s6ZWggkbnICGfgb6ENILPdfacGg",
-  authDomain: "kosmart-threads.firebaseapp.com",
-  projectId: "kosmart-threads",
-  storageBucket: "kosmart-threads.firebasestorage.app",
-  messagingSenderId: "1076176802407",
-  appId: "1:1076176802407:web:73b355a4051afe7494bac2"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
 
-let app, db, storage, FIREBASE_READY = false;
+let app, db, FIREBASE_READY = false;
 try{
   if(firebaseConfig.apiKey !== "REPLACE_ME"){
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
-    storage = getStorage(app);
     FIREBASE_READY = true;
   }
 }catch(e){ console.error('Firebase init failed', e); }
@@ -344,11 +339,6 @@ function resizeImage(file, maxW=800, quality=0.72){
     };
     reader.onerror = reject; reader.readAsDataURL(file);
   });
-}
-async function uploadToStorage(path, dataUrl){
-  const r = ref(storage, path);
-  await uploadString(r, dataUrl, 'data_url');
-  return await getDownloadURL(r);
 }
 
 /* ===================== Derived helpers ===================== */
@@ -477,9 +467,8 @@ $('fileInput').addEventListener('change', async (e)=>{
     try{
       const dataUrl = await resizeImage(f);
       const photoId = 'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-      const url = await uploadToStorage(`rooms/${ROOM}/personal/${myId}/${photoId}.jpg`, dataUrl);
       const cur = myPhotoItems.slice();
-      cur.push({id:photoId, url});
+      cur.push({id:photoId, url:dataUrl});
       await setDoc(privatePhotosRef(myId), {items: cur}, {merge:true});
     }catch(err){ console.error(err); }
   }
@@ -492,8 +481,7 @@ $('officialFileInput').addEventListener('change', async (e)=>{
     try{
       const dataUrl = await resizeImage(f);
       const photoId = 'ph_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-      const url = await uploadToStorage(`rooms/${ROOM}/photobank/${photoId}.jpg`, dataUrl);
-      await setDoc(doc(photobankCol(), photoId), {url, createdAt: Date.now()});
+      await setDoc(doc(photobankCol(), photoId), {url:dataUrl, createdAt: Date.now()});
     }catch(err){ console.error(err); }
   }
   e.target.value = '';
@@ -590,7 +578,8 @@ function renderVoting(){
   const voteCount = Object.keys(scores).length;
   $('voteProgress').textContent = `Пост ${session.currentIndex+1} из ${list.length} · проголосовало ${voteCount} из ${total}`;
   $('voteCap').textContent = post.caption || '(без текста)';
-  $('voteImgs').innerHTML = post.images.map(i=>`<img src="${i}">`).join('');
+  const postImages = post.images || [];
+  $('voteImgs').innerHTML = postImages.map(i=>`<img src="${i}">`).join('');
   $('votedList').textContent = voteCount ? `Проголосовали: ${Object.keys(scores).join(', ')}` : '';
 
   const voter = voterName();
@@ -646,12 +635,13 @@ function renderResults(){
 
   const banner = $('winnerBanner');
   const winner = scored.find(s=>s.count>0);
+  const winnerImages = winner ? (winner.post.images || []) : [];
   banner.innerHTML = winner ? `
     <div class="winner-banner">
       <div class="crown-big">🏆</div>
       <div class="wtag">Пост-победитель</div>
       <div class="wname">${escapeHtml(winner.post.author)}</div>
-      ${winner.post.images.length ? `<div class="wimgs">${winner.post.images.map(i=>`<img src="${i}">`).join('')}</div>` : ''}
+      ${winnerImages.length ? `<div class="wimgs">${winnerImages.map(i=>`<img src="${i}">`).join('')}</div>` : ''}
       <div class="wcap">${escapeHtml(winner.post.caption || '(без текста)')}</div>
       <div class="wscore">Средняя оценка: ${winner.avg.toFixed(1)} · ${winner.count} ${winner.count===1?'голос':'голосов'}</div>
     </div>` : '';
@@ -660,9 +650,10 @@ function renderResults(){
   scored.forEach((s, idx)=>{
     const el = document.createElement('div');
     el.className = 'rank' + (idx===0 && s.count>0 ? ' winner':'');
+    const thumbImg = (s.post.images && s.post.images[0]) ? s.post.images[0] : null;
     el.innerHTML = `
       <div class="place">${idx===0 && s.count>0 ? '<span class="crown">🏆</span>' : idx+1}</div>
-      ${s.post.images[0] ? `<img class="thumb" src="${s.post.images[0]}">` : '<div class="thumb"></div>'}
+      ${thumbImg ? `<img class="thumb" src="${thumbImg}">` : '<div class="thumb"></div>'}
       <div class="info">
         <div class="n">${escapeHtml(s.post.author)}</div>
         <div class="c">${escapeHtml(s.post.caption || '(без текста)')}</div>

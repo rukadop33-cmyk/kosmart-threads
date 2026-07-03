@@ -592,11 +592,25 @@ function renderVoting(){
     b.textContent = n;
     b.disabled = !voter || !!myVote;
     b.onclick = async ()=>{
-      if(!voter){ $('authorInput').focus(); return; }
-      await registerParticipant(voter);
-      await setDoc(doc(votesCol(), post.id), {[`scores.${voter}`]: n}, {merge:true});
-      await maybeAutoAdvanceVoting(post.id, session.currentIndex);
-    };
+  const voter = voterName();
+
+  if(!voter){
+    $('authorInput').focus();
+    return;
+  }
+
+  await registerParticipant(voter);
+
+  await setDoc(
+    doc(votesCol(), post.id),
+    { [`scores.${voter}`]: n },
+    { merge: true }
+  );
+
+  renderVoting();
+
+  await maybeAutoAdvanceVoting(post.id, session.currentIndex);
+};
     chips.appendChild(b);
   }
   $('votedMsg').style.display = myVote ? 'block' : 'none';

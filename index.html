@@ -5,152 +5,197 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Сборка поста — Threads</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #EFEBF4; --bg-2:#E4DEF0;
-    --ink:#241E2E; --ink-soft:#6B6478;
-    --surface: rgba(255,255,255,0.72); --surface-solid:#FCFAFF;
-    --line: rgba(36,30,46,0.10);
-    --coral:#FF6F81; --coral-deep:#E85570;
-    --mint:#7FD9C4; --gold:#E8B33D; --lilac:#C9BFE0;
-    --shadow: 0 20px 40px -20px rgba(36,30,46,0.25);
-    --radius: 22px;
+    --bg:#000000; --surface:#0A0A0A; --surface-2:#161616;
+    --border:#262626; --border-soft:#1C1C1C;
+    --text:#F2F2F2; --text-soft:#7C7C7C; --text-dim:#4A4A4A;
+    --white:#FFFFFF; --black:#000000;
+    --gold:#E8B33D; --danger:#F33A58;
+    --radius:18px;
+    --sys: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    font-family:'Inter',sans-serif; color:var(--ink);
-    background:
-      radial-gradient(circle at 15% -10%, #FBD9E3 0%, transparent 45%),
-      radial-gradient(circle at 110% 10%, #C9F0E4 0%, transparent 40%),
-      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    font-family:var(--sys); color:var(--text); background:var(--bg);
     min-height:100vh; padding-bottom:24px; -webkit-font-smoothing:antialiased;
   }
-  .wrap{max-width:640px;margin:0 auto;padding:20px 18px 24px;}
-  h1{font-family:'Manrope',sans-serif;font-weight:800;font-size:24px;letter-spacing:-0.02em;margin:0 0 4px;}
-  .sub{font-size:14px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;}
-  .tag{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.04em;text-transform:uppercase;color:var(--coral-deep);background:rgba(255,111,129,0.12);padding:4px 10px;border-radius:20px;margin-bottom:12px;}
-  .tag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--coral);}
+  .wrap{max-width:640px;margin:0 auto;padding:18px 16px 24px;}
+  h1{font-family:var(--sys);font-weight:800;font-size:22px;letter-spacing:-0.01em;margin:0 0 4px;color:var(--white);}
+  .sub{font-size:14px;color:var(--text-soft);margin:0 0 14px;line-height:1.5;}
+  .tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-soft);background:var(--surface-2);padding:4px 10px;border-radius:20px;margin-bottom:12px;border:1px solid var(--border);}
+  .tag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--danger);}
 
-  .room-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface-solid);border:1px solid var(--line);border-radius:14px;padding:8px 12px;margin-bottom:14px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);}
-  .room-bar b{color:var(--ink);}
-  .room-bar button{border:none;background:none;color:var(--coral-deep);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;font-weight:600;}
+  .brand-bar{display:flex;align-items:center;gap:10px;margin:0 0 20px;}
+  .brand-logo{width:44px;height:44px;border-radius:11px;display:block;object-fit:cover;flex-shrink:0;}
+  .brand-name{font-family:var(--sys);font-weight:800;font-size:19px;letter-spacing:-0.01em;color:var(--white);}
+  .room-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:8px 12px;margin-bottom:14px;font-family:var(--mono);font-size:12px;color:var(--text-soft);}
+  .room-bar b{color:var(--white);}
+  .room-bar button{border:none;background:none;color:var(--white);font-family:var(--mono);font-size:12px;cursor:pointer;font-weight:600;}
 
   .topbar{display:flex;gap:8px;align-items:center;margin-bottom:16px;}
   .topbar .field{flex:1;margin:0;}
-  .gear{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface-solid);cursor:pointer;font-size:16px;flex-shrink:0;position:relative;}
-  .gear .dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--mint);}
-  .field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:6px;}
-  .field input[type=text]{width:100%;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-solid);font-family:'Inter',sans-serif;font-size:14px;color:var(--ink);outline:none;}
-  .field input[type=text]:focus{border-color:var(--coral);}
+  .gear{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);cursor:pointer;font-size:16px;flex-shrink:0;position:relative;}
+  .field label{display:block;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-soft);margin-bottom:6px;}
+  .field input[type=text]{width:100%;padding:11px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);font-family:var(--sys);font-size:14px;color:var(--white);outline:none;}
+  .field input[type=text]::placeholder{color:var(--text-dim);}
+  .field input[type=text]:focus{border-color:#4D4D4D;}
 
-  details.howto{background:var(--surface);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:12px 16px;margin-bottom:18px;font-size:13px;}
-  details.howto summary{cursor:pointer;font-weight:600;}
-  details.howto p{color:var(--ink-soft);line-height:1.6;margin:10px 0 0;}
+  details.howto{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 16px;margin-bottom:18px;font-size:13px;}
+  details.howto summary{cursor:pointer;font-weight:600;color:var(--white);}
+  details.howto p{color:var(--text-soft);line-height:1.6;margin:10px 0 0;}
 
-  .curator{background:#221B2E;color:#F1ECFA;border-radius:18px;padding:14px 16px;margin-bottom:18px;display:none;}
+  .curator{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px 16px;margin-bottom:18px;display:none;}
   .curator.open{display:block;}
-  .curator h3{font-family:'Manrope',sans-serif;font-size:13px;margin:0 0 10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.04em;}
+  .curator h3{font-family:var(--sys);font-size:13px;margin:0 0 10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;}
   .curator .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
-  .curator button{font-family:'Manrope',sans-serif;font-weight:700;font-size:13px;border:none;border-radius:10px;padding:9px 14px;cursor:pointer;background:var(--coral);color:white;}
-  .curator button.secondary{background:rgba(255,255,255,0.12);color:#F1ECFA;}
-  .curator button:disabled{opacity:0.4;cursor:not-allowed;}
-  .curator .status{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8AFD0;margin-bottom:10px;}
+  .curator button{font-family:var(--sys);font-weight:700;font-size:13px;border:1px solid transparent;border-radius:10px;padding:9px 14px;cursor:pointer;background:var(--white);color:var(--black);}
+  .curator button.secondary{background:transparent;color:var(--text);border-color:var(--border);}
+  .curator button:disabled{opacity:0.35;cursor:not-allowed;}
+  .curator .status{font-family:var(--mono);font-size:12px;color:var(--text-soft);margin-bottom:10px;}
   .plist{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
-  .pchip{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 9px;border-radius:20px;background:rgba(255,255,255,0.08);display:inline-flex;align-items:center;gap:5px;}
-  .pchip.done{background:rgba(127,217,196,0.22);color:var(--mint);}
-  .pchip.pending{color:#B8AFD0;}
-  .pchip .od{width:6px;height:6px;border-radius:50%;background:#4A4358;}
-  .pchip .od.online{background:var(--mint);}
+  .pchip{font-family:var(--mono);font-size:11px;padding:4px 9px;border-radius:20px;background:var(--surface-2);border:1px solid var(--border);display:inline-flex;align-items:center;gap:5px;color:var(--text-soft);}
+  .pchip.done{color:var(--white);border-color:#3A3A3A;}
+  .pchip .od{width:6px;height:6px;border-radius:50%;background:var(--text-dim);}
+  .pchip .od.online{background:#3ECF6E;}
 
-  .card{background:var(--surface);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.6);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 18px 16px;position:relative;overflow:hidden;}
-  .card::before{content:"";position:absolute;top:-40%;right:-20%;width:60%;height:80%;background:radial-gradient(circle, rgba(255,255,255,0.9) 0%, transparent 70%);pointer-events:none;}
-  .post-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;position:relative;}
-  .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg, var(--coral), var(--lilac));display:flex;align-items:center;justify-content:center;color:white;font-family:'Manrope',sans-serif;font-weight:700;font-size:14px;flex-shrink:0;}
-  .who .name{font-weight:600;font-size:14px;line-height:1.2;}
-  .who .time{font-size:12px;color:var(--ink-soft);}
-  .caption{width:100%;min-height:54px;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:15px;line-height:1.5;color:var(--ink);resize:none;outline:none;padding:0;margin-bottom:12px;}
-  .caption::placeholder{color:#A79FB5;}
-  .counter{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-align:right;margin:-6px 0 12px;}
-  .counter.over{color:var(--coral-deep);}
-  .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-  .slot{aspect-ratio:1/1;border-radius:14px;position:relative;overflow:hidden;background:rgba(255,255,255,0.5);border:1.5px dashed rgba(36,30,46,0.18);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s, border-color .15s, background .15s;}
-  .slot.filled{border-style:solid;border-color:transparent;}
-  .slot.armed{border-color:var(--coral);background:rgba(255,111,129,0.10);}
+  /* ---- Threads-style post ---- */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 16px 14px;}
+  .post-head{display:flex;align-items:center;gap:11px;margin-bottom:10px;position:relative;}
+  .avatar{width:44px;height:44px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text);font-weight:700;font-size:15px;flex-shrink:0;}
+  .who{display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;}
+  .who .name{font-weight:700;font-size:16px;line-height:1.2;color:var(--white);}
+  .who .time{font-size:14px;color:var(--text-dim);}
+  .more-dots{color:var(--text-dim);font-size:18px;letter-spacing:1px;padding:4px;}
+  .caption{width:100%;min-height:44px;border:none;background:transparent;font-family:var(--sys);font-size:17px;line-height:1.4;color:var(--text);resize:none;outline:none;padding:0;margin-bottom:10px;}
+  .caption::placeholder{color:var(--text-dim);}
+  .counter{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-align:right;margin:-4px 0 10px;}
+  .counter.over{color:var(--danger);}
+  .cap-tools{display:flex;align-items:center;gap:8px;margin:-2px 0 8px;flex-wrap:wrap;}
+  .spoiler-btn{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-soft);background:var(--surface-2);border:1px solid var(--border);border-radius:20px;padding:5px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+  .spoiler-btn:active{background:var(--border);}
+  .cap-tools-hint{font-family:var(--mono);font-size:10px;color:var(--text-dim);}
+  .spoiler{background:var(--text-dim);color:transparent;border-radius:4px;padding:0 3px;cursor:pointer;transition:background-color .15s ease, color .05s ease;user-select:none;}
+  .spoiler.revealed{background:transparent;color:inherit;user-select:text;cursor:text;}
+  .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  .slot{aspect-ratio:1/1;border-radius:14px;position:relative;overflow:hidden;background:var(--surface-2);border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s, border-color .15s;}
+  .slot.filled{border-style:solid;border-color:var(--border);}
+  .slot.armed{border-color:var(--white);}
   .slot img{width:100%;height:100%;object-fit:cover;display:block;}
-  .slot .idx{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);}
-  .slot .rm{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(36,30,46,0.55);color:white;border:none;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-  .slot.busy{opacity:0.5;}
-  .slot.ripple::after{content:"";position:absolute;inset:0;border-radius:14px;box-shadow:0 0 0 0 rgba(255,111,129,0.55);animation:ripple .55s ease-out;}
-  @keyframes ripple{from{box-shadow:0 0 0 0 rgba(255,111,129,0.55);} to{box-shadow:0 0 0 14px rgba(255,111,129,0);}}
-  .btn-row{display:flex;gap:8px;margin-top:16px;}
-  .save-btn{flex:1;padding:13px;border-radius:14px;background:var(--surface-solid);border:1.5px solid var(--line);color:var(--ink);font-family:'Manrope',sans-serif;font-weight:700;font-size:14px;cursor:pointer;}
-  .save-btn:disabled{opacity:0.45;cursor:not-allowed;}
-  .done-btn{flex:1;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg, var(--coral), var(--coral-deep));color:white;font-family:'Manrope',sans-serif;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 10px 24px -8px rgba(232,85,112,0.55);}
-  .done-btn:disabled{opacity:0.45;cursor:not-allowed;box-shadow:none;}
-  .saved-msg{text-align:center;font-size:13px;color:#1E9C7D;font-weight:600;margin-top:10px;display:none;}
+  .slot .idx{font-family:var(--mono);font-size:10px;color:var(--text-dim);}
+  .slot .rm{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.7);color:white;border:none;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .slot.ripple::after{content:"";position:absolute;inset:0;border-radius:14px;box-shadow:0 0 0 0 rgba(255,255,255,0.5);animation:ripple .55s ease-out;}
+  @keyframes ripple{from{box-shadow:0 0 0 0 rgba(255,255,255,0.5);} to{box-shadow:0 0 0 14px rgba(255,255,255,0);}}
 
-  .lock-note{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:13px;color:var(--ink-soft);text-align:center;margin-top:16px;}
+  .actions-row{display:flex;align-items:center;gap:16px;margin-top:12px;padding-top:2px;color:var(--text);}
+  .actions-row .like-group{display:flex;align-items:center;gap:5px;}
+  .actions-row .like-count{font-size:14px;color:var(--text-soft);font-family:var(--sys);}
+  .actions-row svg{width:23px;height:23px;display:block;}
+  .actions-row .spacer{flex:1;}
 
-  .waiting{background:var(--surface);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.6);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 20px;text-align:center;}
+  .btn-row{display:flex;gap:8px;margin-top:14px;}
+  .save-btn{flex:1;padding:12px;border-radius:20px;background:transparent;border:1px solid var(--border);color:var(--text);font-family:var(--sys);font-weight:700;font-size:14px;cursor:pointer;}
+  .save-btn:disabled{opacity:0.35;cursor:not-allowed;}
+  .done-btn{flex:1;padding:12px;border:none;border-radius:20px;background:var(--white);color:var(--black);font-family:var(--sys);font-weight:700;font-size:14px;cursor:pointer;}
+  .done-btn:disabled{opacity:0.35;cursor:not-allowed;}
+  .saved-msg{text-align:center;font-size:13px;color:#3ECF6E;font-weight:600;margin-top:10px;display:none;}
+  .hint-msg{text-align:center;font-size:12px;color:var(--text-dim);margin-top:8px;}
+
+  .lock-note{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;font-size:13px;color:var(--text-soft);text-align:center;margin-top:16px;}
+
+  .waiting{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 20px;text-align:center;}
   .waiting .big{font-size:32px;margin-bottom:6px;}
-  .waiting h2{font-family:'Manrope',sans-serif;font-size:18px;margin:0 0 6px;}
-  .waiting p{color:var(--ink-soft);font-size:14px;margin:0 0 14px;}
-  .waiting .stat{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--coral-deep);margin-bottom:14px;}
-  .waiting button{background:none;border:1px solid var(--line);border-radius:12px;padding:9px 16px;font-size:13px;color:var(--ink-soft);cursor:pointer;}
+  .waiting h2{font-family:var(--sys);font-size:18px;margin:0 0 6px;color:var(--white);}
+  .waiting p{color:var(--text-soft);font-size:14px;margin:0 0 14px;}
+  .waiting .stat{font-family:var(--mono);font-size:13px;color:var(--white);margin-bottom:14px;}
+  .waiting button{background:none;border:1px solid var(--border);border-radius:20px;padding:9px 16px;font-size:13px;color:var(--text-soft);cursor:pointer;}
 
-  .tray{position:sticky;bottom:0;background:var(--surface-solid);border-top:1px solid var(--line);box-shadow:0 -12px 30px -14px rgba(36,30,46,0.25);padding:10px 14px 4px;backdrop-filter:blur(16px);margin:16px -18px 0;}
-  .tray-label{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:8px;display:flex;justify-content:space-between;}
+  .tray{position:sticky;bottom:0;background:rgba(0,0,0,0.92);backdrop-filter:blur(16px);border-top:1px solid var(--border);padding:10px 14px 4px;margin:16px -16px 0;}
+  .tray-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);margin-bottom:8px;display:flex;justify-content:space-between;}
   .tray-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;}
-  .tray-thumb{width:60px;height:60px;flex-shrink:0;border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;position:relative;}
-  .tray-thumb.selected{border-color:var(--coral);transform:scale(1.05);}
+  .tray-thumb{width:58px;height:58px;flex-shrink:0;border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;position:relative;}
+  .tray-thumb.selected{border-color:var(--white);}
   .tray-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-  .tray-thumb.personal{border-color:var(--mint);}
-  .tray-thumb.uploading{opacity:0.4;}
-  .tray-divider{flex-shrink:0;display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);padding:0 2px;white-space:nowrap;}
-  .add-tile{width:60px;height:60px;flex-shrink:0;border-radius:12px;border:1.5px dashed rgba(36,30,46,0.25);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--ink-soft);cursor:pointer;background:rgba(255,255,255,0.5);}
+  .tray-thumb.personal{border-color:#3ECF6E;}
+  .tray-thumb .rm{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.75);color:white;border:none;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .tray-divider{flex-shrink:0;display:flex;align-items:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:0 2px;white-space:nowrap;}
+  .add-tile{width:58px;height:58px;flex-shrink:0;border-radius:12px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-dim);cursor:pointer;background:var(--surface-2);}
   input[type=file]{display:none;}
 
-  .vote-progress{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);text-align:center;margin-bottom:10px;}
-  .vote-card{background:var(--surface);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.6);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 18px;text-align:left;}
-  .vote-cap{font-size:16px;line-height:1.5;margin-bottom:14px;}
-  .vote-imgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:6px;}
-  .vote-imgs img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;}
-  .scale-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.05em;margin:18px 0 8px;text-align:center;}
+  .vote-progress{font-family:var(--mono);font-size:12px;color:var(--text-soft);text-align:center;margin-bottom:10px;}
+  .vote-card{background:transparent;border:none;border-bottom:1px solid var(--border);padding:4px 0 20px;text-align:left;}
+  .vote-cap{font-size:17px;line-height:1.4;margin-bottom:12px;color:var(--text);}
+  .img-carousel{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;touch-action:pan-x;position:relative;scrollbar-width:none;}
+  .img-carousel::-webkit-scrollbar{display:none;}
+  .img-track{display:flex;gap:6px;}
+  .img-track img{flex:0 0 100%;width:100%;aspect-ratio:4/5;object-fit:cover;scroll-snap-align:start;border-radius:16px;background:var(--surface-2);max-height:55vh;}
+  .img-slider{width:100%;margin-top:8px;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:var(--border);outline:none;}
+  .img-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--white);cursor:pointer;}
+  .img-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--white);border:none;cursor:pointer;}
+  .img-track.multi img{flex:0 0 89%;width:89%;}
+  .img-counter{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.55);color:var(--white);font-family:var(--sys);font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;pointer-events:none;}
+  .scale-label{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin:18px 0 8px;text-align:center;}
   .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
-  .chip{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-solid);font-family:'Manrope',sans-serif;font-weight:700;font-size:15px;cursor:pointer;color:var(--ink);}
-  .chip.active{background:var(--coral);border-color:var(--coral);color:white;}
-  .chip:disabled{opacity:0.4;cursor:not-allowed;}
-  .voted-msg{text-align:center;margin-top:14px;font-size:14px;color:var(--coral-deep);font-weight:600;}
-  .voted-list{text-align:center;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+  .chip{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface-2);font-family:var(--sys);font-weight:700;font-size:15px;cursor:pointer;color:var(--text);}
+  .chip.active{background:var(--white);border-color:var(--white);color:var(--black);}
+  .chip:disabled{opacity:0.35;cursor:not-allowed;}
+  .voted-msg{text-align:center;margin-top:14px;font-size:14px;color:var(--white);font-weight:600;}
+  .voted-list{text-align:center;margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--text-dim);}
 
-  .winner-banner{background:linear-gradient(160deg, #2A2036, #241E2E);color:#F1ECFA;border-radius:var(--radius);padding:26px 20px;text-align:center;margin-bottom:20px;box-shadow:var(--shadow);}
-  .winner-banner .crown-big{font-size:38px;margin-bottom:4px;}
-  .winner-banner .wtag{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:10px;}
-  .winner-banner .wimgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;margin:12px 0;max-width:360px;margin-left:auto;margin-right:auto;}
-  .winner-banner .wimgs img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;}
-  .winner-banner .wname{font-family:'Manrope',sans-serif;font-weight:800;font-size:20px;margin-bottom:6px;}
-  .winner-banner .wcap{font-size:14px;color:#D7CFE8;line-height:1.5;margin-bottom:12px;}
-  .winner-banner .wscore{font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--gold);}
-  .rank{display:flex;gap:12px;align-items:center;background:var(--surface-solid);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;}
-  .rank.winner{background:linear-gradient(135deg, rgba(232,179,61,0.18), rgba(255,111,129,0.10));border-color:var(--gold);}
-  .rank .place{font-family:'Manrope',sans-serif;font-weight:800;font-size:18px;width:28px;text-align:center;color:var(--ink-soft);}
+  .winner-banner{background:var(--surface);border:1px solid var(--gold);border-radius:var(--radius);padding:24px 18px;text-align:center;margin-bottom:20px;}
+  .winner-banner .crown-big{font-size:36px;margin-bottom:4px;}
+  .winner-banner .wtag{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:10px;}
+  .winner-banner .wimgs{max-width:320px;margin:12px auto;}
+  .winner-banner .wname{font-family:var(--sys);font-weight:800;font-size:19px;margin-bottom:6px;color:var(--white);}
+  .winner-banner .wcap{font-size:14px;color:var(--text-soft);line-height:1.5;margin-bottom:12px;}
+  .winner-banner .wscore{font-family:var(--mono);font-size:14px;color:var(--gold);}
+  .rank{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 14px;margin-bottom:10px;cursor:pointer;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:50;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 16px;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;max-width:460px;width:100%;position:relative;}
+  .modal-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:16px;cursor:pointer;z-index:5;}
+  .modal-score{font-family:var(--mono);font-size:13px;color:var(--gold);margin-top:10px;}
+  #modalHead{padding-right:34px;}
+  .rank.winner{border-color:var(--gold);}
+  .rank .place{font-family:var(--sys);font-weight:800;font-size:17px;width:26px;text-align:center;color:var(--text-dim);}
   .rank.winner .place{color:var(--gold);}
-  .rank .thumb{width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#eee;}
+  .rank .thumb{width:46px;height:46px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--surface-2);}
   .rank .info{flex:1;min-width:0;}
-  .rank .info .n{font-weight:700;font-size:14px;}
-  .rank .info .c{font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .rank .score{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:16px;color:var(--coral-deep);}
-  .crown{font-size:20px;}
+  .rank .info .n{font-weight:700;font-size:14px;color:var(--white);}
+  .rank .info .c{font-size:12px;color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rank .score{font-family:var(--mono);font-weight:700;font-size:15px;color:var(--white);}
+  .crown{font-size:18px;}
 
-  .cfg-warning{background:#3A1E24;color:#FFD7DC;border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.6;margin-bottom:16px;font-family:'IBM Plex Mono',monospace;}
-  .cfg-warning b{color:#FF9FAC;}
+  /* ---- Engagement (likes/replies/reposts) ---- */
+  .eng-row{display:flex;align-items:center;gap:10px;margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--text-dim);}
+  .eng-row span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;}
+  .rank .info .eng-row{margin-top:3px;}
+  .actions-row .cnt{font-size:13px;color:var(--text-soft);font-family:var(--sys);margin-left:-6px;}
+  .actions-row .grp{display:flex;align-items:center;gap:5px;}
+  .modal-eng{margin-top:10px;}
+
+  /* ---- Auto-generated Threads-style comment ---- */
+  .thread-comment{display:flex;gap:10px;align-items:flex-start;text-align:left;margin-top:16px;padding-top:14px;border-top:1px solid var(--border-soft);}
+  .thread-comment .c-avatar{width:32px;height:32px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-soft);flex-shrink:0;}
+  .thread-comment .c-body{flex:1;min-width:0;}
+  .thread-comment .c-name{font-weight:700;font-size:13px;color:var(--white);margin-bottom:2px;}
+  .thread-comment .c-text{font-size:14px;color:var(--text);line-height:1.4;}
+
+  .cfg-warning{background:#2A0E14;color:#FF9FAC;border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.6;margin-bottom:16px;font-family:var(--mono);border:1px solid #4A1520;}
+  .cfg-warning b{color:#FF5C70;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div id="cfgWarning"></div>
+
+  <div class="brand-bar">
+    <img src="data:image/png;base64,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" alt="Kosmart" class="brand-logo" width="44" height="44">
+    <span class="brand-name">Kosmart</span>
+  </div>
 
   <div class="tag" id="phaseTag">Сборка постов</div>
   <h1>Пост для Threads</h1>
@@ -186,23 +231,38 @@
     2. Когда пост готов — жмёте «Готово, я закончил(а)».<br>
     3. Как только готовы все — голосование начнётся автоматически.<br>
     4. Каждый ставит оценку от 1 до 10 показанному посту — следующий пост появится сам, когда проголосуют все.<br>
-    5. В конце — рейтинг и победитель, у всех сразу.</p>
+    5. В конце — рейтинг и победитель, у всех сразу.<br>
+    6. Хотите скрыть часть текста спойлером, как в Threads? Выделите фрагмент в поле поста и нажмите «🙈 Спойлер» — при голосовании и в результатах текст будет скрыт под серой плашкой, пока по нему не нажмут.</p>
   </details>
 
-  <div id="composeView">
+  <div id="composeView" style="display:none;">
     <div class="card">
       <div class="post-head">
         <div class="avatar" id="avatarInit">?</div>
-        <div class="who"><div class="name" id="nameDisplay">Ваш ник</div><div class="time">сейчас</div></div>
+        <div class="who"><span class="name" id="nameDisplay">Ваш ник</span><span class="time">· сейчас</span></div>
+        <span class="more-dots">⋯</span>
       </div>
       <textarea class="caption" id="captionInput" placeholder="Текст поста…" maxlength="500" rows="3"></textarea>
+      <div class="cap-tools">
+        <button type="button" class="spoiler-btn" id="spoilerBtn">🙈 Спойлер</button>
+        <span class="cap-tools-hint">выделите текст в поле выше, потом нажмите</span>
+      </div>
       <div class="counter" id="counter">0 / 500</div>
       <div class="slots" id="slots"></div>
+      <div class="actions-row">
+        <span class="like-group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20.5s-8-4.8-8-11A4.7 4.7 0 0 1 12 6.2 4.7 4.7 0 0 1 20 9.5c0 6.2-8 11-8 11Z"/></svg><span class="like-count">0</span></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3-.5L3 21l1.6-4.8A8.4 8.4 0 1 1 21 11.5Z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M17 2l4 4-4 4M3 11V8a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v3a3 3 0 0 1-3 3H3"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>
+        <span class="spacer"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>
+      </div>
       <div class="btn-row">
         <button class="save-btn" id="saveBtn" disabled>Сохранить пост</button>
         <button class="done-btn" id="doneBtn" disabled>Готово, я закончил(а)</button>
       </div>
       <div class="saved-msg" id="savedMsg">Пост сохранён ✓</div>
+      <div class="hint-msg" id="hintMsg"></div>
     </div>
     <div class="tray" id="trayBlock">
       <div class="tray-label"><span>Банк фото</span><span>нажмите фото, затем — на слот</span></div>
@@ -223,12 +283,24 @@
   <div id="votingView" style="display:none;">
     <div class="vote-progress" id="voteProgress"></div>
     <div class="vote-card">
+      <div class="post-head" id="voteHead"></div>
       <div class="vote-cap" id="voteCap"></div>
       <div class="vote-imgs" id="voteImgs"></div>
+      <div class="actions-row">
+        <span class="like-group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20.5s-8-4.8-8-11A4.7 4.7 0 0 1 12 6.2 4.7 4.7 0 0 1 20 9.5c0 6.2-8 11-8 11Z"/></svg><span class="like-count">0</span></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3-.5L3 21l1.6-4.8A8.4 8.4 0 1 1 21 11.5Z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M17 2l4 4-4 4M3 11V8a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v3a3 3 0 0 1-3 3H3"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>
+        <span class="spacer"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>
+      </div>
     </div>
-    <div class="scale-label">Оцените пост от 1 до 10</div>
-    <div class="chips" id="chips"></div>
-    <div class="voted-msg" id="votedMsg" style="display:none;"></div>
+    <div id="ownPostNote" class="lock-note" style="display:none;">✨ Это ваш пост.<br>Вы не можете оценивать собственную работу.<br>Дождитесь голосов остальных участников.</div>
+    <div id="voteScaleBlock">
+      <div class="scale-label">Оцените пост от 1 до 10</div>
+      <div class="chips" id="chips"></div>
+      <div class="voted-msg" id="votedMsg" style="display:none;"></div>
+    </div>
     <div class="voted-list" id="votedList"></div>
   </div>
 
@@ -237,6 +309,18 @@
     <div id="rankList"></div>
   </div>
 
+  <div class="modal-overlay" id="postModal">
+    <div class="modal-box">
+      <button class="modal-close" id="modalClose">×</button>
+      <div class="post-head" id="modalHead"></div>
+      <div class="vote-cap" id="modalCap"></div>
+      <div id="modalImgs"></div>
+      <div class="modal-score" id="modalScore"></div>
+      <div class="modal-eng" id="modalEng" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div id="loadingNote" class="lock-note">Загрузка комнаты…</div>
   <div id="lockedNote" class="lock-note" style="display:none;"></div>
 </div>
 
@@ -248,7 +332,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, updateDoc, getDoc, getDocs, onSnapshot,
-  collection, addDoc, serverTimestamp, runTransaction
+  collection, addDoc, deleteDoc, serverTimestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -311,6 +395,13 @@ let selectedPhotoId = null;
 let currentSlots = new Array(SLOT_COUNT).fill(null);
 let curatorOpen = false;
 let myId = null; // slug of current name, set on registration
+let sessionLoaded = false;
+
+function showFatalError(msg){
+  const loading = $('loadingNote');
+  loading.style.display = 'block';
+  loading.innerHTML = `⚠️ ${escapeHtml(msg)}`;
+}
 
 function slugify(name){
   return name.trim().toLowerCase()
@@ -320,6 +411,60 @@ function slugify(name){
 }
 function initials(name){ if(!name) return '?'; const p=name.trim().split(/\s+/); return (p[0][0]+(p[1]?p[1][0]:'')).toUpperCase(); }
 function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str; return d.innerHTML; }
+
+/* ---- Threads-style text spoilers: ||hidden text|| becomes a tap-to-reveal block ---- */
+function renderCaptionHTML(text){
+  if(!text) return '<span style="color:var(--text-dim)">(без текста)</span>';
+  return text.split(/(\|\|[\s\S]+?\|\|)/g).map(part=>{
+    const m = part.match(/^\|\|([\s\S]+?)\|\|$/);
+    if(m) return `<span class="spoiler" onclick="this.classList.toggle('revealed')">${escapeHtml(m[1])}</span>`;
+    return escapeHtml(part);
+  }).join('');
+}
+
+function carouselHTML(images, uid){
+  if(!images.length) return '';
+  const multi = images.length>1;
+  const counter = multi ? `<div class="img-counter" id="counter_${uid}">1/${images.length}</div>` : '';
+  const slider = multi ? `<input type="range" class="img-slider" id="slider_${uid}" min="0" max="${images.length-1}" step="1" value="0">` : '';
+  return `<div class="img-carousel" id="carousel_${uid}"><div class="img-track${multi?' multi':''}">${images.map(i=>`<img src="${i}">`).join('')}</div>${counter}</div>${slider}`;
+}
+function wireCarousel(uid){
+  const carousel = document.getElementById('carousel_' + uid);
+  const counter = document.getElementById('counter_' + uid);
+  const slider = document.getElementById('slider_' + uid);
+  if(!carousel) return;
+  const imgs = carousel.querySelectorAll('img');
+  const applyRatio = ()=>{
+    const first = imgs[0];
+    if(!first || !first.naturalWidth) return;
+    let ratio = first.naturalWidth / first.naturalHeight;
+    ratio = Math.max(0.75, Math.min(1.91, ratio));
+    imgs.forEach(im => im.style.aspectRatio = ratio);
+  };
+  if(imgs[0]){
+    if(imgs[0].complete) applyRatio();
+    else imgs[0].addEventListener('load', applyRatio, {once:true});
+  }
+  if(!counter && !slider) return;
+  const slideWidth = () => imgs[0] ? imgs[0].getBoundingClientRect().width + 6 : carousel.clientWidth;
+  let syncing = false;
+  carousel.addEventListener('scroll', ()=>{
+    if(syncing) return;
+    const idx = Math.min(imgs.length-1, Math.max(0, Math.round(carousel.scrollLeft / slideWidth())));
+    if(counter) counter.textContent = `${idx+1}/${imgs.length}`;
+    if(slider) slider.value = idx;
+  });
+  if(slider){
+    slider.addEventListener('input', ()=>{
+      syncing = true;
+      const idx = parseInt(slider.value, 10);
+      carousel.scrollTo({left: idx*slideWidth(), behavior:'smooth'});
+      if(counter) counter.textContent = `${idx+1}/${imgs.length}`;
+      setTimeout(()=> syncing=false, 300);
+    });
+  }
+}
 const voterName = () => $('authorInput').value.trim();
 
 function resizeImage(file, maxW=800, quality=0.72){
@@ -346,6 +491,97 @@ function sortedPosts(){
   return posts.slice().sort((a,b)=> (a.createdAt?.toMillis?.()||0) - (b.createdAt?.toMillis?.()||0));
 }
 function hasSavedPost(name){ return posts.some(p=>p.author===name); }
+
+/* ===================== Fake engagement (likes/replies/reposts) ===================== */
+const engagementCache = {}; // postId -> {likes, replies, reposts, animated}
+
+function computeEngagement(avg){
+  const p = Math.max(0, Math.min(1, (avg||0)/10));
+  const jitter = (min,max)=> min + Math.random()*(max-min);
+  const likes = Math.max(3, Math.round((16 + Math.pow(p,1.35)*260) * jitter(0.82,1.22)));
+  const replyRatio = jitter(0.025,0.075);
+  let replies = Math.round(likes*replyRatio);
+  if(likes>=8) replies = Math.max(replies,1);
+  const repostRatio = jitter(0.3,0.65);
+  let reposts = Math.round(replies*repostRatio);
+  if(replies>=3) reposts = Math.max(reposts,1);
+  return {likes, replies, reposts};
+}
+function getEngagement(postId, avg){
+  if(!engagementCache[postId]){
+    engagementCache[postId] = {...computeEngagement(avg), animated:false};
+  }
+  return engagementCache[postId];
+}
+function formatCount(n){
+  if(n>=100000) return Math.round(n/1000)+'K';
+  if(n>=10000) return (n/1000).toFixed(0)+'K';
+  if(n>=1000) return (n/1000).toFixed(1).replace(/\.0$/,'')+'K';
+  return String(n);
+}
+function animateCount(el, target, duration=1500){
+  if(!el) return;
+  if(target<=0){ el.textContent = '0'; return; }
+  const t0 = performance.now();
+  function tick(now){
+    const t = Math.min(1, (now-t0)/duration);
+    const eased = 1 - Math.pow(1-t, 3);
+    el.textContent = formatCount(Math.round(target*eased));
+    if(t<1) requestAnimationFrame(tick);
+    else el.textContent = formatCount(target);
+  }
+  requestAnimationFrame(tick);
+}
+
+const AUTO_COMMENT_AUTHORS = ['Threads Insight', 'Threads Review', 'Threads Pulse', 'Threads Trends'];
+const AUTO_COMMENTS = [
+  '🔥 Этот пост сильнее остальных зацепил внимание команды. Его определённо стоит протестировать первым.',
+  '🚀 Отличная идея. Такой формат выглядит очень перспективно.',
+  '✨ Самый сильный пост сегодняшнего раунда.',
+  '👀 Такой пост действительно хочется открыть полностью.',
+  '❤️ Команда почти единогласно выбрала именно этот вариант.',
+  '📈 Очень хороший баланс текста и визуальной части.',
+  '💯 Этот пост выглядит наиболее естественно для рекомендаций Threads.',
+  '👏 Уверенная победа — и по подаче, и по смыслу.',
+  '🙌 Ровно то, что цепляет с первой секунды.',
+  '⚡ Динамика в этом посте чувствуется сразу.',
+  '🎯 Попадание в аудиторию на 100%.',
+  '💬 Пост, который реально хочется обсудить.',
+  '🧠 Умный подход к подаче — сразу видно.',
+  '🌟 Однозначный фаворит этого раунда.',
+  '📌 Такой формат стоит взять на заметку для следующих постов.',
+  '👌 Чисто, понятно и по делу — за это и любят Threads.',
+  '🔝 Оторвался от остальных с большим отрывом.',
+  '💫 Лёгкий и цепляющий — прямо в точку.',
+  '📊 Цифры голосования говорят сами за себя.',
+  '🏆 Заслуженное первое место.',
+  '👍 Команда сразу узнала победителя.',
+  '🎉 Отличный результат для этого раунда.',
+  '📝 Текст и визуал здесь работают идеально вместе.',
+  '💥 Пост, который взрывает ленту.',
+  '🌈 Свежий и живой — выделяется на фоне остальных.',
+  '🧩 Все элементы поста сложились идеально.',
+  '⭐ Явный лидер по итогам оценок.',
+  '🎨 Отличная визуальная подача.',
+  '📣 Заслуживает того, чтобы выйти в топ рекомендаций.',
+  '🥇 Без вопросов — лучший пост раунда.'
+];
+function pickAutoComment(){
+  let last = null;
+  try{ last = localStorage.getItem('tpb_last_comment_' + ROOM); }catch(e){}
+  let text;
+  let guard = 0;
+  do{
+    text = AUTO_COMMENTS[Math.floor(Math.random()*AUTO_COMMENTS.length)];
+    guard++;
+  } while(text===last && guard<10);
+  try{ localStorage.setItem('tpb_last_comment_' + ROOM, text); }catch(e){}
+  const author = AUTO_COMMENT_AUTHORS[Math.floor(Math.random()*AUTO_COMMENT_AUTHORS.length)];
+  return {text, author};
+}
+function commentInitials(name){
+  return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+}
 function participantStats(){
   const ids = Object.keys(participants);
   const done = ids.filter(id=>participants[id].done).length;
@@ -386,10 +622,17 @@ async function maybeAutoStartVoting(){
 
 /* ===================== Firestore listeners (realtime, no polling) ===================== */
 function attachListeners(){
-  onSnapshot(sessionRef(), (snap)=>{
-    session = snap.exists() ? snap.data() : {phase:'compose', currentIndex:0};
-    render();
-  });
+  onSnapshot(sessionRef(),
+    (snap)=>{
+      session = snap.exists() ? snap.data() : {phase:'compose', currentIndex:0};
+      sessionLoaded = true;
+      render();
+    },
+    (err)=>{
+      console.error('session onSnapshot error', err);
+      showFatalError(`Не удалось подключиться к комнате «${ROOM}»: ${err.code || err.message}. Проверьте, что Firestore-правила задеплоены и firebaseConfig совпадает с вашим проектом.`);
+    }
+  );
 
   onSnapshot(photobankCol(), (snap)=>{
     photobank = snap.docs.map(d=>({id:d.id, url:d.data().url}));
@@ -437,6 +680,17 @@ function renderTray(){
     el.className = 'tray-thumb' + (selectedPhotoId===p.id ? ' selected' : '');
     el.innerHTML = `<img src="${p.url}" draggable="false">`;
     el.onclick = ()=>{ selectedPhotoId = (selectedPhotoId===p.id) ? null : p.id; renderTray(); renderSlots(); };
+    if(curatorOpen){
+      const rm = document.createElement('button');
+      rm.className = 'rm'; rm.textContent = '×'; rm.title = 'Удалить из общего банка';
+      rm.onclick = async (ev)=>{
+        ev.stopPropagation();
+        if(!confirm('Удалить это фото из общего банка? Оно исчезнет у всех, но уже созданные посты не пострадают.')) return;
+        try{ await deleteDoc(doc(photobankCol(), p.id)); }
+        catch(err){ console.error(err); alert('Не удалось удалить фото'); }
+      };
+      el.appendChild(rm);
+    }
     strip.appendChild(el);
   });
   if(myPhotoItems.length>0){
@@ -448,6 +702,18 @@ function renderTray(){
       el.className = 'tray-thumb personal' + (selectedPhotoId===p.id ? ' selected' : '');
       el.innerHTML = `<img src="${p.url}" draggable="false">`;
       el.onclick = ()=>{ selectedPhotoId = (selectedPhotoId===p.id) ? null : p.id; renderTray(); renderSlots(); };
+      const rm = document.createElement('button');
+      rm.className = 'rm'; rm.textContent = '×'; rm.title = 'Удалить своё фото';
+      rm.onclick = async (ev)=>{
+        ev.stopPropagation();
+        if(!confirm('Удалить это фото из ваших загрузок?')) return;
+        try{
+          const cur = myPhotoItems.filter(it=>it.id!==p.id);
+          await setDoc(privatePhotosRef(myId), {items: cur}, {merge:true});
+          if(selectedPhotoId===p.id) selectedPhotoId = null;
+        }catch(err){ console.error(err); alert('Не удалось удалить фото'); }
+      };
+      el.appendChild(rm);
       strip.appendChild(el);
     });
   }
@@ -520,13 +786,22 @@ function updateSaveState(){
   const hasName = name.length>0;
   const hasCaption = $('captionInput').value.trim().length>0;
   const hasImage = currentSlots.some(s=>s);
-  $('saveBtn').disabled = !(hasName && (hasCaption || hasImage));
-  $('doneBtn').disabled = !(hasName && hasSavedPost(name));
+  const canSave = hasName && (hasCaption || hasImage);
+  const canFinish = hasName && hasSavedPost(name);
+  $('saveBtn').disabled = !canSave;
+  $('doneBtn').disabled = !canFinish;
+
+  const hint = $('hintMsg');
+  if(!hasName) hint.textContent = 'Впишите имя сверху, чтобы сохранить пост';
+  else if(!hasCaption && !hasImage) hint.textContent = 'Добавьте текст или хотя бы одно фото';
+  else if(!hasSavedPost(name)) hint.textContent = 'Сохраните пост, потом станет доступна кнопка «Готово»';
+  else hint.textContent = '';
 }
 $('authorInput').addEventListener('input', ()=>{
   const v = voterName();
   $('nameDisplay').textContent = v || 'Ваш ник';
   $('avatarInit').textContent = initials(v);
+  try{ localStorage.setItem('tpb_name_' + ROOM, v); }catch(e){}
   updateSaveState();
   if(session.phase==='voting') renderVoting();
 });
@@ -540,23 +815,49 @@ $('captionInput').addEventListener('input', ()=>{
   $('counter').classList.toggle('over', len>500);
   updateSaveState();
 });
+$('spoilerBtn').addEventListener('click', ()=>{
+  const ta = $('captionInput');
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  if(start===end){
+    alert('Сначала выделите в поле текста тот фрагмент, который нужно скрыть спойлером');
+    ta.focus();
+    return;
+  }
+  const value = ta.value;
+  const selected = value.slice(start, end);
+  ta.value = value.slice(0, start) + '||' + selected + '||' + value.slice(end);
+  ta.focus();
+  ta.selectionStart = start + 2;
+  ta.selectionEnd = start + 2 + selected.length;
+  ta.dispatchEvent(new Event('input'));
+});
 $('saveBtn').addEventListener('click', async ()=>{
   const author = voterName();
   const caption = $('captionInput').value.trim();
   const images = currentSlots.filter(s=>s);
   if(!author || !FIREBASE_READY) return;
-  await registerParticipant(author);
-  await addDoc(postsCol(), {author, caption, images, createdAt: serverTimestamp()});
-  currentSlots = new Array(SLOT_COUNT).fill(null);
-  $('captionInput').value=''; $('counter').textContent='0 / 500';
-  renderSlots(); updateSaveState();
-  $('savedMsg').style.display='block';
-  setTimeout(()=>$('savedMsg').style.display='none', 2500);
+  const btn = $('saveBtn');
+  if(btn.disabled) return;
+  btn.disabled = true; $('doneBtn').disabled = true;
+  try{
+    await registerParticipant(author);
+    await addDoc(postsCol(), {author, caption, images, createdAt: serverTimestamp()});
+    currentSlots = new Array(SLOT_COUNT).fill(null);
+    $('captionInput').value=''; $('counter').textContent='0 / 500';
+    renderSlots();
+    $('savedMsg').style.display='block';
+    setTimeout(()=>$('savedMsg').style.display='none', 2500);
+  }catch(e){ console.error(e); alert('Не удалось сохранить пост, попробуйте ещё раз'); }
+  updateSaveState();
 });
 $('doneBtn').addEventListener('click', async ()=>{
   const author = voterName();
   if(!author || !hasSavedPost(author)) return;
-  await setDone(author, true);
+  const btn = $('doneBtn');
+  if(btn.disabled) return;
+  btn.disabled = true;
+  try{ await setDone(author, true); }
+  catch(e){ console.error(e); alert('Не удалось сохранить статус, попробуйте ещё раз'); }
   render();
 });
 $('editAgainBtn').addEventListener('click', async ()=>{
@@ -568,21 +869,43 @@ function renderWaiting(){
   $('waitStat').textContent = `готово ${done} из ${total}`;
 }
 
-/* ===================== Voting ===================== */
+function requiredVoterIds(post){
+  const authorId = post.author ? slugify(post.author) : null;
+  return Object.keys(participants).filter(id=> id !== authorId);
+}
+
 function renderVoting(){
   const list = sortedPosts();
   const post = list[session.currentIndex];
   if(!post){ $('voteProgress').textContent = 'Постов нет'; return; }
-  const {total} = participantStats();
   const scores = votesByPost[post.id] || {};
   const voteCount = Object.keys(scores).length;
-  $('voteProgress').textContent = `Пост ${session.currentIndex+1} из ${list.length} · проголосовало ${voteCount} из ${total}`;
-  $('voteCap').textContent = post.caption || '(без текста)';
+  const requiredIds = requiredVoterIds(post);
+  const required = requiredIds.length;
+  $('voteProgress').textContent = `Пост ${session.currentIndex+1} из ${list.length} · проголосовало ${voteCount} из ${required}`;
+  $('voteHead').innerHTML = `<div class="avatar">?</div><div class="who"><span class="name">Пост ${session.currentIndex+1}</span><span class="time">· анонимно</span></div><span class="more-dots">⋯</span>`;
+  $('voteCap').innerHTML = renderCaptionHTML(post.caption);
   const postImages = post.images || [];
-  $('voteImgs').innerHTML = postImages.map(i=>`<img src="${i}">`).join('');
-  $('votedList').textContent = voteCount ? `Проголосовали: ${Object.keys(scores).join(', ')}` : '';
+  $('voteImgs').innerHTML = carouselHTML(postImages, 'vote');
+  wireCarousel('vote');
 
   const voter = voterName();
+  const isOwnPost = voter && post.author && voter.trim().toLowerCase() === post.author.trim().toLowerCase();
+
+  $('ownPostNote').style.display = isOwnPost ? 'block' : 'none';
+  $('voteScaleBlock').style.display = isOwnPost ? 'none' : 'block';
+
+  const votedNames = Object.keys(scores);
+  const waitingNames = requiredIds
+    .map(id => participants[id]?.name || id)
+    .filter(name => !votedNames.includes(name));
+  let listText = '';
+  if(votedNames.length) listText += `Проголосовали: ${votedNames.join(', ')}`;
+  if(waitingNames.length) listText += (listText?' · ':'') + `Ждём: ${waitingNames.join(', ')}`;
+  $('votedList').textContent = listText;
+
+  if(isOwnPost){ return; }
+
   const myVote = voter ? scores[voter] : null;
   const chips = $('chips');
   chips.innerHTML = '';
@@ -593,23 +916,25 @@ function renderVoting(){
     b.disabled = !voter || !!myVote;
     b.onclick = async ()=>{
       if(!voter){ $('authorInput').focus(); return; }
+      Array.from(chips.children).forEach(c=>c.disabled = true);
       await registerParticipant(voter);
       await setDoc(doc(votesCol(), post.id), {scores: {[voter]: n}}, {merge:true});
-      await maybeAutoAdvanceVoting(post.id, session.currentIndex);
+      await maybeAutoAdvanceVoting(post.id, session.currentIndex, post.author);
     };
     chips.appendChild(b);
   }
   $('votedMsg').style.display = myVote ? 'block' : 'none';
-  $('votedMsg').textContent = myVote ? `Ваша оценка: ${myVote}. Следующий пост появится автоматически.` : '';
+  $('votedMsg').textContent = myVote ? `Ваша оценка: ${myVote}. Следующий пост появится автоматически, когда проголосуют все.` : '';
 }
 
-async function maybeAutoAdvanceVoting(postId, indexVoted){
+async function maybeAutoAdvanceVoting(postId, indexVoted, authorName){
   const votesSnap = await getDoc(doc(votesCol(), postId));
   const scores = votesSnap.exists() ? (votesSnap.data().scores || {}) : {};
   const partSnap = await getDocs(participantsCol());
-  const total = partSnap.size;
+  const authorId = authorName ? slugify(authorName) : null;
+  const required = partSnap.docs.filter(d=> d.id !== authorId).length;
   const voteCount = Object.keys(scores).length;
-  if(total>0 && voteCount>=total){
+  if(required===0 || voteCount>=required){
     const list = sortedPosts();
     await runTransaction(db, async (tx)=>{
       const snap = await tx.get(sessionRef());
@@ -636,33 +961,119 @@ function renderResults(){
   const banner = $('winnerBanner');
   const winner = scored.find(s=>s.count>0);
   const winnerImages = winner ? (winner.post.images || []) : [];
+  let winnerEng = null;
+  if(winner){
+    winnerEng = getEngagement(winner.post.id, winner.avg);
+    if(!winnerEng.comment){
+      winnerEng.comment = pickAutoComment();
+    }
+  }
   banner.innerHTML = winner ? `
     <div class="winner-banner">
       <div class="crown-big">🏆</div>
       <div class="wtag">Пост-победитель</div>
       <div class="wname">${escapeHtml(winner.post.author)}</div>
-      ${winnerImages.length ? `<div class="wimgs">${winnerImages.map(i=>`<img src="${i}">`).join('')}</div>` : ''}
-      <div class="wcap">${escapeHtml(winner.post.caption || '(без текста)')}</div>
+      ${winnerImages.length ? `<div class="wimgs">${carouselHTML(winnerImages, 'winner')}</div>` : ''}
+      <div class="wcap">${renderCaptionHTML(winner.post.caption)}</div>
+      <div class="actions-row" style="justify-content:center;">
+        <span class="grp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20.5s-8-4.8-8-11A4.7 4.7 0 0 1 12 6.2 4.7 4.7 0 0 1 20 9.5c0 6.2-8 11-8 11Z"/></svg><span class="cnt" data-eng="likes">0</span></span>
+        <span class="grp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3-.5L3 21l1.6-4.8A8.4 8.4 0 1 1 21 11.5Z"/></svg><span class="cnt" data-eng="replies">0</span></span>
+        <span class="grp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M17 2l4 4-4 4M3 11V8a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v3a3 3 0 0 1-3 3H3"/></svg><span class="cnt" data-eng="reposts">0</span></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>
+      </div>
       <div class="wscore">Средняя оценка: ${winner.avg.toFixed(1)} · ${winner.count} ${winner.count===1?'голос':'голосов'}</div>
+      <div class="thread-comment">
+        <div class="c-avatar">${commentInitials(winnerEng.comment.author)}</div>
+        <div class="c-body">
+          <div class="c-name">${escapeHtml(winnerEng.comment.author)}</div>
+          <div class="c-text">${escapeHtml(winnerEng.comment.text)}</div>
+        </div>
+      </div>
     </div>` : '';
+  if(winner && winnerImages.length>0) wireCarousel('winner');
+  if(winner){
+    const root = banner;
+    const likeEl = root.querySelector('[data-eng="likes"]');
+    const replyEl = root.querySelector('[data-eng="replies"]');
+    const repostEl = root.querySelector('[data-eng="reposts"]');
+    if(!winnerEng.animated){
+      winnerEng.animated = true;
+      animateCount(likeEl, winnerEng.likes);
+      animateCount(replyEl, winnerEng.replies);
+      animateCount(repostEl, winnerEng.reposts);
+    } else {
+      if(likeEl) likeEl.textContent = formatCount(winnerEng.likes);
+      if(replyEl) replyEl.textContent = formatCount(winnerEng.replies);
+      if(repostEl) repostEl.textContent = formatCount(winnerEng.reposts);
+    }
+  }
 
   const box = $('rankList'); box.innerHTML = '';
   scored.forEach((s, idx)=>{
     const el = document.createElement('div');
     el.className = 'rank' + (idx===0 && s.count>0 ? ' winner':'');
     const thumbImg = (s.post.images && s.post.images[0]) ? s.post.images[0] : null;
+    const eng = getEngagement(s.post.id, s.avg);
     el.innerHTML = `
       <div class="place">${idx===0 && s.count>0 ? '<span class="crown">🏆</span>' : idx+1}</div>
       ${thumbImg ? `<img class="thumb" src="${thumbImg}">` : '<div class="thumb"></div>'}
       <div class="info">
         <div class="n">${escapeHtml(s.post.author)}</div>
-        <div class="c">${escapeHtml(s.post.caption || '(без текста)')}</div>
+        <div class="c">${renderCaptionHTML(s.post.caption)}</div>
+        <div class="eng-row">
+          <span>❤️ <b data-eng="likes">0</b></span>
+          <span>💬 <b data-eng="replies">0</b></span>
+          <span>🔁 <b data-eng="reposts">0</b></span>
+        </div>
       </div>
       <div class="score">${s.count ? s.avg.toFixed(1) : '—'}</div>
     `;
+    el.onclick = ()=> openPostModal(s);
     box.appendChild(el);
+    const likeEl = el.querySelector('[data-eng="likes"]');
+    const replyEl = el.querySelector('[data-eng="replies"]');
+    const repostEl = el.querySelector('[data-eng="reposts"]');
+    if(!eng.animated){
+      eng.animated = true;
+      animateCount(likeEl, eng.likes);
+      animateCount(replyEl, eng.replies);
+      animateCount(repostEl, eng.reposts);
+    } else {
+      if(likeEl) likeEl.textContent = formatCount(eng.likes);
+      if(replyEl) replyEl.textContent = formatCount(eng.replies);
+      if(repostEl) repostEl.textContent = formatCount(eng.reposts);
+    }
   });
 }
+
+function openPostModal(s){
+  const p = s.post;
+  $('modalHead').innerHTML = `<div class="avatar">${initials(p.author)}</div><div class="who"><span class="name">${escapeHtml(p.author)}</span></div>`;
+  $('modalCap').innerHTML = renderCaptionHTML(p.caption);
+  const images = p.images || [];
+  $('modalImgs').innerHTML = carouselHTML(images, 'modal');
+  if(images.length>0) wireCarousel('modal');
+  $('modalScore').textContent = s.count
+    ? `Средняя оценка: ${s.avg.toFixed(1)} · ${s.count} ${s.count===1?'голос':'голосов'}`
+    : 'Пока нет оценок';
+  const modalEngEl = $('modalEng');
+  if(s.count){
+    const eng = getEngagement(p.id, s.avg);
+    modalEngEl.style.display = 'block';
+    modalEngEl.innerHTML = `<div class="eng-row" style="font-size:13px;">
+      <span>❤️ ${formatCount(eng.likes)}</span>
+      <span>💬 ${formatCount(eng.replies)}</span>
+      <span>🔁 ${formatCount(eng.reposts)}</span>
+    </div>`;
+  } else {
+    modalEngEl.style.display = 'none';
+    modalEngEl.innerHTML = '';
+  }
+  $('postModal').classList.add('open');
+}
+$('modalClose').addEventListener('click', ()=> $('postModal').classList.remove('open'));
+$('postModal').addEventListener('click', (e)=>{ if(e.target.id==='postModal') $('postModal').classList.remove('open'); });
 
 /* ===================== Curator panel ===================== */
 function renderCurator(){
@@ -671,7 +1082,8 @@ function renderCurator(){
   const plist = $('curatorPList');
   const list = sortedPosts();
   const {ids, total, done} = participantStats();
-  status.textContent = `Комната: ${ROOM} · Фаза: ${session.phase} · Постов: ${posts.length} · Готово: ${done} из ${total}`;
+  const phaseNames = {compose:'сборка', voting:'голосование', results:'результаты'};
+  status.textContent = `Комната: ${ROOM} · Фаза: ${phaseNames[session.phase] || session.phase} · Постов: ${posts.length} · Готово: ${done} из ${total}`;
   plist.innerHTML = ids.map(id=>{
     const p = participants[id];
     const online = Date.now() - (p.lastSeen||0) < 20000;
@@ -708,16 +1120,12 @@ function renderCurator(){
 $('gearBtn').addEventListener('click', ()=>{
   curatorOpen = !curatorOpen;
   $('curatorPanel').classList.toggle('open', curatorOpen);
+  renderTray();
   if(curatorOpen) renderCurator();
 });
 $('resetBtn').addEventListener('click', async ()=>{
   if(!confirm('Точно начать заново? Посты, оценки и статусы участников в этой комнате будут удалены (общий банк фото останется).')) return;
   const [postsSnap, votesSnap, partSnap] = await Promise.all([getDocs(postsCol()), getDocs(votesCol()), getDocs(participantsCol())]);
-  await Promise.all([
-    ...postsSnap.docs.map(d=> setDoc(d.ref, {deleted:true})), // soft marker; see README for cleanup note
-  ]);
-  // hard delete via deleteDoc where available
-  const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   await Promise.all([
     ...postsSnap.docs.map(d=> deleteDoc(d.ref)),
     ...votesSnap.docs.map(d=> deleteDoc(d.ref)),
@@ -728,7 +1136,15 @@ $('resetBtn').addEventListener('click', async ()=>{
 
 /* ===================== Main render ===================== */
 function render(){
-  const compose = $('composeView'), waiting = $('waitingView'), voting = $('votingView'), results = $('resultsView'), locked = $('lockedNote'), howto = $('howto');
+  const compose = $('composeView'), waiting = $('waitingView'), voting = $('votingView'), results = $('resultsView'), locked = $('lockedNote'), howto = $('howto'), loading = $('loadingNote');
+
+  if(!sessionLoaded){
+    loading.style.display='block';
+    compose.style.display='none'; waiting.style.display='none'; voting.style.display='none'; results.style.display='none'; locked.style.display='none'; howto.style.display='none';
+    return;
+  }
+  loading.style.display='none';
+
   compose.style.display='none'; waiting.style.display='none'; voting.style.display='none'; results.style.display='none'; locked.style.display='none';
 
   const myName = voterName();
@@ -759,7 +1175,25 @@ function render(){
 
 /* ===================== Boot ===================== */
 renderSlots();
-if(FIREBASE_READY) attachListeners();
+try{
+  const savedName = localStorage.getItem('tpb_name_' + ROOM);
+  if(savedName){
+    $('authorInput').value = savedName;
+    $('nameDisplay').textContent = savedName;
+    $('avatarInit').textContent = initials(savedName);
+  }
+}catch(e){}
+updateSaveState();
+if(FIREBASE_READY){
+  attachListeners();
+  const savedName = voterName();
+  if(savedName) registerParticipant(savedName);
+  setTimeout(()=>{
+    if(!sessionLoaded){
+      showFatalError(`Комната «${ROOM}» не отвечает уже 8 секунд. Обычно это значит: не задеплоены firestore.rules, Firestore не включён в проекте, или firebaseConfig указывает не на тот проект. Откройте консоль браузера (F12) — там будет точная ошибка.`);
+    }
+  }, 8000);
+}
 </script>
 </body>
 </html>
